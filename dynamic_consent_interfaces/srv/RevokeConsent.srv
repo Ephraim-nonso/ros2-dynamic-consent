@@ -1,0 +1,6 @@
+# UI/CLI -> Manager: withdraw a previously granted permission.
+string session_id
+string capability_id
+---
+bool success
+string message

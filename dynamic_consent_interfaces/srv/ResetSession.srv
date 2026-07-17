@@ -1,0 +1,6 @@
+# Experimenter -> Manager: clear all consent state at the end of a session.
+string session_id
+---
+bool success
+uint32 cleared_count
+string message
