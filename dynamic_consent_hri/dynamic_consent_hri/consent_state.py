@@ -74,9 +74,12 @@ class ConsentStore:
     """
 
     def __init__(self, policy: Policy,
-                 clock: Callable[[], float] = time.time) -> None:
+                 clock: Callable[[], float] = time.time,
+                 on_expire: Callable[[ConsentRecord], None] | None = None
+                 ) -> None:
         self._policy = policy
         self._clock = clock
+        self._on_expire = on_expire
         self._records: dict[tuple[str, str], ConsentRecord] = {}
 
     # -- queries ----------------------------------------------------------
@@ -195,3 +198,5 @@ class ConsentStore:
                 and record.expires_at is not None
                 and self._clock() >= record.expires_at):
             record.status = ConsentStatus.EXPIRED
+            if self._on_expire is not None:
+                self._on_expire(record)

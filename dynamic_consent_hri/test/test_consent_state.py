@@ -199,6 +199,17 @@ class TestExpiry:
         with pytest.raises(ConsentStateError):
             store.revoke(SESSION, CAP)
 
+    def test_on_expire_callback_fires_once(self, clock):
+        expired = []
+        store = ConsentStore(POLICY, clock=clock, on_expire=expired.append)
+        record = store.create_request(SESSION, CAP)
+        store.record_decision(record.request_id, SESSION, CAP, granted=True)
+        clock.advance(301)
+        store.check(SESSION, CAP)
+        store.check(SESSION, CAP)
+        assert len(expired) == 1
+        assert expired[0].capability_id == CAP
+
     def test_zero_expiry_lasts_whole_session(self, store, clock):
         grant(store, capability="route_guidance")
         clock.advance(100000)
