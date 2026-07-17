@@ -1,0 +1,35 @@
+policy_version: "1.0"
+
+capabilities:
+  speech_input:
+    sensor: microphone
+    purpose: "Understand the destination requested by the user"
+    prompt: >
+      To understand your destination, may I use the microphone?
+      Audio will be processed for this interaction and will not be stored.
+    retention: "not_stored"
+    expiry_seconds: 300
+    required: false
+    refusal_fallback: "show_destination_menu"
+
+  gesture_recognition:
+    sensor: camera
+    purpose: "Recognise the direction indicated by the user"
+    prompt: >
+      To see where you are pointing, may I temporarily use the camera?
+      Images will be processed for this interaction and will not be stored.
+    retention: "not_stored"
+    expiry_seconds: 180
+    required: false
+    refusal_fallback: "show_direction_buttons"
+
+  route_guidance:
+    sensor: location
+    purpose: "Provide navigation assistance"
+    prompt: >
+      To guide you there, may I use your current location inside the building?
+      Your location history will not be stored.
+    retention: "interaction_only"
+    expiry_seconds: 600
+    required: false
+    refusal_fallback: "show_written_route"
