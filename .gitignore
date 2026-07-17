@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ROS 2 / colcon
+build/
+install/
+log/
+
+# Research logs (never commit session data)
+dynamic_consent_hri/logs/*
+!dynamic_consent_hri/logs/.gitkeep
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
