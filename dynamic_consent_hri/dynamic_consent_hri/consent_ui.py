@@ -25,9 +25,15 @@ def _to_view(msg: ConsentPrompt) -> PromptView:
         session_id=msg.session_id,
         capability_id=msg.capability_id,
         sensor=msg.sensor,
+        privacy_dimensions=tuple(msg.privacy_dimensions),
+        data_inputs=tuple(msg.data_inputs),
         purpose=msg.purpose,
+        processing=msg.processing,
+        processing_location=msg.processing_location,
+        recipients=tuple(msg.recipients),
         prompt_text=msg.prompt_text,
         retention=msg.retention,
+        retention_seconds=msg.retention_seconds,
         expiry_seconds=msg.expiry_seconds,
     )
 

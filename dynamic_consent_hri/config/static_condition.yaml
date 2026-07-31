@@ -3,11 +3,15 @@ consent_manager:
     consent_mode: static
     policy_file: privacy_policy.yaml
     static_disclosure: >
-      This robot may use its microphone, camera and location information to
-      provide assistance during this session. Audio, images and location data
-      are processed only for the current interaction and are not stored. You
-      may accept or refuse this once at the start; refusing means the robot
-      will use on-screen alternatives instead.
+      During this session, this robot may recognise returning users, listen for
+      a destination, remember preferences for 30 days, analyse body pose, use
+      indoor location, follow a user across a private-space boundary, and send
+      an unrecorded live audio/video stream to authorised building assistance
+      staff. Some identity and preference data may remain on this robot for 30
+      days; other sensor data is not stored or lasts only for the interaction.
+      You may accept or refuse all of these uses once at the start. Refusing
+      selects anonymous, session-only, on-screen, local, or in-person
+      alternatives so the task can still continue.
 
 privacy_gate:
   ros__parameters:

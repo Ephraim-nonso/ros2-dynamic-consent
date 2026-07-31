@@ -9,7 +9,7 @@ consent design differs.
 | | Static condition | Dynamic condition |
 |---|---|---|
 | Disclosure timing | Once, at session start | At the moment each capability is needed |
-| Prompt content | One combined disclosure | Per-capability purpose + retention |
+| Prompt content | One combined disclosure | Per-capability purpose, processing, recipient, and retention |
 | Revocation | Available on request | Available on request, surfaced in UI |
 | Parameter | `consent_mode: static` | `consent_mode: dynamic` |
 
@@ -18,18 +18,30 @@ condition files and a shared launch constructor. Both conditions start the
 same manager, gate, terminal UI and scenario simulator. Only the manager and
 gate consent timing changes.
 
-## Three-stage task scenario (deterministic)
+## Seven-stage task scenario (deterministic)
 
 Every session runs the same sequence:
 
-1. **Stage 1 — Destination**: the robot needs the participant's destination.
+1. **Stage 1 — Returning user**: the robot offers to recognise the participant
+   for personalised assistance. Capability: `person_recognition`. Fallback:
+   anonymous temporary session.
+2. **Stage 2 — Destination**: the robot needs the participant's destination.
    Capability: `speech_input` (microphone). Fallback: destination menu.
-2. **Stage 2 — Direction**: the robot asks the participant to point where
-   they want to go first. Capability: `gesture_recognition` (camera).
-   Fallback: direction buttons.
-3. **Stage 3 — Guidance**: the robot guides the participant to the
+3. **Stage 3 — Personalisation**: the robot offers to remember destinations
+   and preferences for 30 days. Capability: `interaction_memory`. Fallback:
+   session-only memory.
+4. **Stage 4 — Direction and assistance**: the robot offers to derive body
+   pose for pointing, mobility difficulty, or a possible fall. Capability:
+   `body_pose_tracking`. Fallback: direction and assistance controls.
+5. **Stage 5 — Guidance**: the robot guides the participant to the
    destination. Capability: `route_guidance` (location). Fallback: written
    directions.
+6. **Stage 6 — Private-space boundary**: the robot offers to follow the user
+   across a declared boundary. Capability: `proximity_or_private_space_access`.
+   Fallback: wait outside and provide instructions.
+7. **Stage 7 — Remote assistance**: the robot offers an unrecorded live stream
+   to authorised building assistance staff. Capability:
+   `remote_assistance_stream`. Fallback: local help or in-person staff.
 
 The simulator publishes each capability request in this fixed order and does
 not advance until the gate publishes either authorization or blocking. It

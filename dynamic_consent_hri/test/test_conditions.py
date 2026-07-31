@@ -71,9 +71,10 @@ def test_only_declared_consent_design_parameters_differ():
     static_manager.pop('consent_mode')
     dynamic_manager.pop('consent_mode')
     assert static_manager == dynamic_manager
-    assert 'microphone' in disclosure
-    assert 'camera' in disclosure
-    assert 'location' in disclosure
+    assert 'recognise returning users' in disclosure
+    assert 'remember preferences for 30 days' in disclosure
+    assert 'authorised building assistance staff' in disclosure
+    assert 'private-space boundary' in disclosure
 
 
 def test_condition_launch_files_exist():

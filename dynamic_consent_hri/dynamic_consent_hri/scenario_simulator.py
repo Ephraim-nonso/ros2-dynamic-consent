@@ -1,4 +1,4 @@
-"""Deterministic three-stage capability simulator for both conditions."""
+"""Deterministic privacy-dimension simulator for both conditions."""
 
 from __future__ import annotations
 
@@ -95,7 +95,8 @@ class ScenarioSimulatorNode(Node):
             self._complete = True
             self._next_action_at = None
             self._publish_status('scenario_complete')
-            self.get_logger().info('three-stage scenario complete')
+            self.get_logger().info(
+                f'{len(SCENARIO_STAGES)}-stage scenario complete')
             return
 
         stage = SCENARIO_STAGES[self._next_stage_index]

@@ -279,9 +279,28 @@ class ConsentManagerNode(Node):
         prompt.session_id = self._session_id
         prompt.capability_id = STATIC_CAPABILITY_ID
         prompt.sensor = ', '.join(sensors)
+        prompt.privacy_dimensions = sorted({
+            dimension
+            for capability in self._policy.capabilities.values()
+            for dimension in capability.privacy_dimensions
+        })
+        prompt.data_inputs = sorted({
+            data_input
+            for capability in self._policy.capabilities.values()
+            for data_input in capability.data_inputs
+        })
         prompt.purpose = 'Provide assistance during this session'
+        prompt.processing = (
+            'Collect and use the listed data for all disclosed capabilities')
+        prompt.processing_location = 'mixed; view the disclosure for details'
+        prompt.recipients = sorted({
+            recipient
+            for capability in self._policy.capabilities.values()
+            for recipient in capability.recipients
+        })
         prompt.prompt_text = disclosure.strip()
-        prompt.retention = 'not_stored'
+        prompt.retention = 'mixed'
+        prompt.retention_seconds = 0
         prompt.expiry_seconds = 0
         prompt.requested_at = to_time_msg(records[0].requested_at)
         self._prompt_pub.publish(prompt)
@@ -295,9 +314,15 @@ class ConsentManagerNode(Node):
         msg.session_id = record.session_id
         msg.capability_id = record.capability_id
         msg.sensor = capability.sensor
+        msg.privacy_dimensions = list(capability.privacy_dimensions)
+        msg.data_inputs = list(capability.data_inputs)
         msg.purpose = capability.purpose
+        msg.processing = capability.processing
+        msg.processing_location = capability.processing_location
+        msg.recipients = list(capability.recipients)
         msg.prompt_text = capability.prompt
         msg.retention = capability.retention
+        msg.retention_seconds = capability.retention_seconds
         msg.expiry_seconds = capability.expiry_seconds
         msg.requested_at = to_time_msg(record.requested_at)
         self._prompt_pub.publish(msg)

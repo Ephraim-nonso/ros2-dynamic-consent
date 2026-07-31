@@ -1,35 +1,133 @@
-policy_version: "1.0"
+policy_version: "2.0"
 
 capabilities:
+  person_recognition:
+    sensor: "face camera and biometric identity template"
+    privacy_dimensions: [informational, social]
+    data_inputs: [facial_image, biometric_identity_template]
+    purpose: "Recognise a returning user for personalised assistance"
+    processing: >
+      Create and compare a biometric identity template with enrolled users.
+    processing_location: on_robot
+    recipients: [robot_identity_service]
+    prompt: >
+      May I recognise you as a returning user? A biometric identity template
+      derived from your face will be stored on this robot for 30 days and
+      used only to personalise your assistance.
+    retention: declared_period
+    retention_seconds: 2592000
+    expiry_seconds: 300
+    required: false
+    refusal_fallback: "start_anonymous_temporary_session"
+
   speech_input:
     sensor: microphone
+    privacy_dimensions: [informational]
+    data_inputs: [live_audio, spoken_destination]
     purpose: "Understand the destination requested by the user"
+    processing: "Transcribe the destination from live audio"
+    processing_location: on_robot
+    recipients: [robot_assistance_system]
     prompt: >
-      To understand your destination, may I use the microphone?
-      Audio will be processed for this interaction and will not be stored.
-    retention: "not_stored"
+      To understand your destination, may I use the microphone? Audio will be
+      processed on the robot for this interaction and will not be stored.
+    retention: not_stored
+    retention_seconds: 0
     expiry_seconds: 300
     required: false
     refusal_fallback: "show_destination_menu"
 
-  gesture_recognition:
-    sensor: camera
-    purpose: "Recognise the direction indicated by the user"
+  interaction_memory:
+    sensor: "interaction history and preference store"
+    privacy_dimensions: [informational, psychological]
+    data_inputs: [destination_history, assistance_preferences]
+    purpose: "Remember preferences and previous destinations for future visits"
+    processing: >
+      Build a returning-user profile from destinations and assistance choices.
+    processing_location: on_robot
+    recipients: [robot_personalisation_service]
     prompt: >
-      To see where you are pointing, may I temporarily use the camera?
-      Images will be processed for this interaction and will not be stored.
-    retention: "not_stored"
+      May I remember your destinations and assistance preferences for future
+      visits? The profile will stay on this robot for 30 days. If you refuse,
+      the robot will remember information only until this session ends.
+    retention: declared_period
+    retention_seconds: 2592000
+    expiry_seconds: 300
+    required: false
+    refusal_fallback: "use_session_only_memory"
+
+  body_pose_tracking:
+    sensor: "depth camera and body-pose model"
+    privacy_dimensions: [informational, physical]
+    data_inputs: [depth_frames, skeletal_landmarks]
+    purpose: "Detect pointing, mobility difficulty, or a possible fall"
+    processing: >
+      Derive temporary skeletal landmarks and classify body pose on the robot.
+    processing_location: on_robot
+    recipients: [robot_assistance_system]
+    prompt: >
+      May I analyse your body pose to understand pointing and identify possible
+      mobility difficulty or a fall? Depth frames and skeletal landmarks will
+      be processed on the robot and will not be stored.
+    retention: not_stored
+    retention_seconds: 0
     expiry_seconds: 180
     required: false
-    refusal_fallback: "show_direction_buttons"
+    refusal_fallback: "show_direction_and_assistance_controls"
 
   route_guidance:
-    sensor: location
-    purpose: "Provide navigation assistance"
+    sensor: "indoor location and navigation state"
+    privacy_dimensions: [informational, physical]
+    data_inputs: [current_indoor_location, route_progress]
+    purpose: "Provide navigation assistance through the building"
+    processing: "Calculate and update a route from the current indoor location"
+    processing_location: on_robot
+    recipients: [robot_navigation_system]
     prompt: >
       To guide you there, may I use your current location inside the building?
-      Your location history will not be stored.
-    retention: "interaction_only"
+      Location is used only during this interaction and no location history
+      will be stored.
+    retention: interaction_only
+    retention_seconds: 0
     expiry_seconds: 600
     required: false
     refusal_fallback: "show_written_route"
+
+  proximity_or_private_space_access:
+    sensor: "proximity sensors, navigation state, and privacy-zone map"
+    privacy_dimensions: [physical, social]
+    data_inputs: [proximity_ranges, navigation_state, privacy_zone]
+    purpose: "Follow the user or enter a restricted area to continue assistance"
+    processing: >
+      Detect personal-space distance and determine whether navigation would
+      cross a declared private-space boundary.
+    processing_location: on_robot
+    recipients: [robot_navigation_system]
+    prompt: >
+      May I follow you and cross the indicated private-space boundary to
+      continue assistance? Proximity and zone information is used only for
+      this interaction. If you refuse, I will wait outside the boundary.
+    retention: interaction_only
+    retention_seconds: 0
+    expiry_seconds: 180
+    required: false
+    refusal_fallback: "wait_at_boundary_and_show_instructions"
+
+  remote_assistance_stream:
+    sensor: "live camera and microphone stream"
+    privacy_dimensions: [informational, social]
+    data_inputs: [live_video, live_audio]
+    purpose: "Permit a remote staff member to assist with the current task"
+    processing: >
+      Transmit an encrypted live audio and video stream without recording it.
+    processing_location: local_network
+    recipients: [authorised_building_assistance_staff]
+    prompt: >
+      May I start a live audio and video connection to an authorised member of
+      the building assistance staff? The staff member can see and hear this
+      interaction. The stream will not be recorded or retained.
+    retention: not_stored
+    retention_seconds: 0
+    expiry_seconds: 300
+    required: false
+    refusal_fallback: "show_local_help_or_request_in_person_staff"

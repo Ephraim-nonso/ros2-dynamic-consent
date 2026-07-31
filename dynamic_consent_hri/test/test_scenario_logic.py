@@ -4,13 +4,17 @@ from dynamic_consent_hri.policy_loader import load_policy
 from dynamic_consent_hri.scenario_logic import SCENARIO_STAGES
 
 
-def test_scenario_has_frozen_three_stage_order():
+def test_scenario_covers_each_privacy_dimension_capability_in_order():
     assert [stage.capability_id for stage in SCENARIO_STAGES] == [
+        'person_recognition',
         'speech_input',
-        'gesture_recognition',
+        'interaction_memory',
+        'body_pose_tracking',
         'route_guidance',
+        'proximity_or_private_space_access',
+        'remote_assistance_stream',
     ]
-    assert [stage.number for stage in SCENARIO_STAGES] == [1, 2, 3]
+    assert [stage.number for stage in SCENARIO_STAGES] == list(range(1, 8))
 
 
 def test_scenario_fallbacks_match_policy():
