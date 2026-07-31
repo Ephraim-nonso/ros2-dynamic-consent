@@ -9,6 +9,7 @@ events. If the policy fails to load, the node stays up but denies everything
 from __future__ import annotations
 
 import time
+import uuid
 
 import rclpy
 from rclpy.node import Node
@@ -19,13 +20,17 @@ from dynamic_consent_interfaces.msg import (ConsentDecision, ConsentEvent,
 from dynamic_consent_interfaces.srv import (CheckConsent, ResetSession,
                                             RevokeConsent)
 
+from .conditions import validate_consent_mode
 from .consent_state import (ConsentRecord, ConsentStateError, ConsentStore,
                             UnknownCapabilityError)
 from .package_paths import resolve_policy_path
 from .policy_loader import PolicyError, load_policy
-from .ros_qos import SESSION_QOS
+from .ros_qos import PROMPT_QOS, SESSION_QOS
 from .ros_time import to_time_msg
 from .session import generate_session_id
+
+
+STATIC_CAPABILITY_ID = 'all_capabilities'
 
 
 class ConsentManagerNode(Node):
@@ -36,17 +41,26 @@ class ConsentManagerNode(Node):
         self.declare_parameter('policy_file', 'privacy_policy.yaml')
         self.declare_parameter('session_id', '')
         self.declare_parameter('consent_mode', 'dynamic')
+        self.declare_parameter('static_disclosure', '')
 
-        self._condition = self.get_parameter('consent_mode').value
+        raw_condition = self.get_parameter('consent_mode').value
+        try:
+            self._condition = validate_consent_mode(raw_condition)
+        except ValueError as exc:
+            self._condition = 'invalid'
+            self.get_logger().error(f'{exc}; manager will fail closed')
         self._session_id = (self.get_parameter('session_id').value
                             or generate_session_id())
+        self._static_request_id: str | None = None
+        self._static_requests: dict[str, str] = {}
+        self._static_decided = False
         self.get_logger().info(
             f'session {self._session_id}, condition {self._condition}')
 
         self._event_pub = self.create_publisher(
             ConsentEvent, '/consent/event', 10)
         self._prompt_pub = self.create_publisher(
-            ConsentPrompt, '/consent/prompt', 10)
+            ConsentPrompt, '/consent/prompt', PROMPT_QOS)
         self._session_pub = self.create_publisher(
             String, '/consent/session', SESSION_QOS)
 
@@ -80,11 +94,18 @@ class ConsentManagerNode(Node):
         session_msg.data = self._session_id
         self._session_pub.publish(session_msg)
         self._publish_event('session_started')
+        if self._condition == 'static' and self._store is not None:
+            self._begin_static_consent()
 
     # -- topic callbacks --------------------------------------------------
 
     def _on_consent_request(self, msg: String) -> None:
         """A gate (or the scenario) asks for consent to be obtained."""
+        if self._condition != 'dynamic':
+            self.get_logger().warning(
+                f'per-capability request for {msg.data!r} ignored in '
+                f'{self._condition} mode')
+            return
         if self._store is None:
             self.get_logger().warning(
                 f'request for {msg.data!r} ignored: policy invalid')
@@ -115,6 +136,10 @@ class ConsentManagerNode(Node):
             self.get_logger().warning(
                 f'invalid decision value {msg.decision} ignored')
             return
+        if (self._condition == 'static'
+                and msg.decision != ConsentDecision.REVOKED):
+            self._record_static_decision(msg)
+            return
         try:
             if msg.decision == ConsentDecision.REVOKED:
                 record = self._store.revoke(msg.session_id, msg.capability_id)
@@ -133,6 +158,41 @@ class ConsentManagerNode(Node):
                             capability_id=record.capability_id,
                             decision=record.status.name.lower(),
                             response_ms=response_ms)
+
+    def _record_static_decision(self, msg: ConsentDecision) -> None:
+        if self._store is None:
+            return
+        if (msg.capability_id != STATIC_CAPABILITY_ID
+                or msg.request_id != self._static_request_id):
+            self.get_logger().warning(
+                'individual or stale decision ignored in static mode')
+            return
+        if self._static_decided:
+            self.get_logger().warning('duplicate static decision ignored')
+            return
+
+        granted = msg.decision == ConsentDecision.GRANTED
+        try:
+            records = self._store.record_group_decision(
+                self._session_id,
+                self._static_requests,
+                granted,
+                apply_expiry=False,
+            )
+            for record in records:
+                response_ms = int(
+                    (record.decided_at - record.requested_at) * 1000)
+                self._publish_event(
+                    'consent_decided',
+                    capability_id=record.capability_id,
+                    decision=record.status.name.lower(),
+                    response_ms=response_ms,
+                )
+        except ConsentStateError as exc:
+            self.get_logger().error(
+                f'static decision failed closed: {exc}')
+            return
+        self._static_decided = True
 
     # -- service callbacks ------------------------------------------------
 
@@ -187,6 +247,46 @@ class ConsentManagerNode(Node):
     def _on_expire(self, record: ConsentRecord) -> None:
         self._publish_event('consent_expired',
                             capability_id=record.capability_id)
+
+    def _begin_static_consent(self) -> None:
+        disclosure = self.get_parameter('static_disclosure').value
+        if not isinstance(disclosure, str) or not disclosure.strip():
+            self.get_logger().error(
+                'static disclosure is empty; all capabilities remain denied')
+            return
+
+        records = []
+        try:
+            for capability_id in sorted(self._policy.capabilities):
+                record = self._store.create_request(
+                    self._session_id, capability_id)
+                records.append(record)
+                self._static_requests[capability_id] = record.request_id
+        except ConsentStateError as exc:
+            self.get_logger().error(
+                f'cannot create static disclosure: {exc}')
+            self._store.reset_session(self._session_id)
+            self._static_requests.clear()
+            return
+
+        self._static_request_id = uuid.uuid4().hex[:12]
+        sensors = sorted({
+            capability.sensor
+            for capability in self._policy.capabilities.values()
+        })
+        prompt = ConsentPrompt()
+        prompt.request_id = self._static_request_id
+        prompt.session_id = self._session_id
+        prompt.capability_id = STATIC_CAPABILITY_ID
+        prompt.sensor = ', '.join(sensors)
+        prompt.purpose = 'Provide assistance during this session'
+        prompt.prompt_text = disclosure.strip()
+        prompt.retention = 'not_stored'
+        prompt.expiry_seconds = 0
+        prompt.requested_at = to_time_msg(records[0].requested_at)
+        self._prompt_pub.publish(prompt)
+        self._publish_event(
+            'consent_requested', capability_id=STATIC_CAPABILITY_ID)
 
     def _publish_prompt(self, record: ConsentRecord) -> None:
         capability = self._policy.get(record.capability_id)

@@ -13,6 +13,11 @@ consent design differs.
 | Revocation | Available on request | Available on request, surfaced in UI |
 | Parameter | `consent_mode: static` | `consent_mode: dynamic` |
 
+The Phase 4 implementation enforces this comparison through separate
+condition files and a shared launch constructor. Both conditions start the
+same manager, gate, terminal UI and scenario simulator. Only the manager and
+gate consent timing changes.
+
 ## Three-stage task scenario (deterministic)
 
 Every session runs the same sequence:
@@ -25,6 +30,25 @@ Every session runs the same sequence:
 3. **Stage 3 — Guidance**: the robot guides the participant to the
    destination. Capability: `route_guidance` (location). Fallback: written
    directions.
+
+The simulator publishes each capability request in this fixed order and does
+not advance until the gate publishes either authorization or blocking. It
+then reports the simulated capability or fallback action on
+`/scenario/status` before advancing.
+
+## Running Phase 4
+
+```bash
+ros2 launch dynamic_consent_hri static_demo.launch.py
+ros2 launch dynamic_consent_hri dynamic_demo.launch.py
+```
+
+Run only one condition at a time. The terminal UI reads explicit choices from
+the controlling terminal. Observe the deterministic flow with:
+
+```bash
+ros2 topic echo /scenario/status
+```
 
 ## Anonymous logging schema (frozen)
 

@@ -1,0 +1,15 @@
+consent_manager:
+  ros__parameters:
+    consent_mode: dynamic
+    policy_file: privacy_policy.yaml
+
+privacy_gate:
+  ros__parameters:
+    consent_mode: dynamic
+    policy_file: privacy_policy.yaml
+
+scenario_simulator:
+  ros__parameters:
+    consent_mode: dynamic
+    startup_delay_seconds: 2.0
+    stage_delay_seconds: 1.0

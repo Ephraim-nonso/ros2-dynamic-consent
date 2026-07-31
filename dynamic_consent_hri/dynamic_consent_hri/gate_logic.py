@@ -26,11 +26,15 @@ _FALLBACK_STATUSES = frozenset({
 })
 
 
-def decide(status: ConsentStatus) -> GateAction:
+def decide(status: ConsentStatus, *,
+           reprompt_expired: bool = True) -> GateAction:
     if status is ConsentStatus.GRANTED:
         return GateAction.ALLOW
-    if status in (ConsentStatus.UNKNOWN, ConsentStatus.EXPIRED):
+    if status is ConsentStatus.UNKNOWN:
         return GateAction.REQUEST_CONSENT
+    if status is ConsentStatus.EXPIRED:
+        return (GateAction.REQUEST_CONSENT if reprompt_expired
+                else GateAction.FALLBACK)
     if status is ConsentStatus.PENDING:
         return GateAction.WAIT
     if status is ConsentStatus.INVALID_CAPABILITY:

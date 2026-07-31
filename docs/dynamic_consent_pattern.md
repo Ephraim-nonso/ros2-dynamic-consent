@@ -85,3 +85,16 @@ The Phase 3 UI publishes only explicit allow or refuse decisions. Viewing
 more information returns to the same choice, while invalid input asks again.
 EOF, terminal closure and UI failure publish nothing. The manager therefore
 keeps the request `PENDING`, and the gate cannot forward the capability.
+
+## Condition semantics
+
+In the dynamic condition, `UNKNOWN` and `EXPIRED` consent trigger a
+capability-specific prompt. Refused or revoked consent runs the configured
+fallback.
+
+In the static condition, the manager creates pending records for every policy
+capability and presents one combined prompt at session start. The single
+decision is validated for every record before any record is changed, avoiding
+a partially granted session. A static grant lasts for the session; refusal or
+later revocation causes the relevant fallback and never triggers a dynamic
+prompt.

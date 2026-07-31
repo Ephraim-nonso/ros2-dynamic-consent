@@ -17,9 +17,9 @@ from __future__ import annotations
 
 import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Callable
+from typing import Callable, Mapping
 
 from .policy_loader import Policy
 
@@ -147,7 +147,8 @@ class ConsentStore:
         return record
 
     def record_decision(self, request_id: str, session_id: str,
-                        capability_id: str, granted: bool) -> ConsentRecord:
+                        capability_id: str, granted: bool, *,
+                        apply_expiry: bool = True) -> ConsentRecord:
         """Apply a participant decision to a PENDING request.
 
         The request_id must match the current pending request so a stale or
@@ -169,11 +170,43 @@ class ConsentStore:
             record.status = ConsentStatus.GRANTED
             capability = self._policy.get(capability_id)
             # expiry_seconds == 0 means consent lasts for the whole session
-            if capability.expiry_seconds > 0:
+            if apply_expiry and capability.expiry_seconds > 0:
                 record.expires_at = now + capability.expiry_seconds
         else:
             record.status = ConsentStatus.REFUSED
         return record
+
+    def record_group_decision(
+            self, session_id: str, request_ids: Mapping[str, str],
+            granted: bool, *, apply_expiry: bool = True
+            ) -> list[ConsentRecord]:
+        """Atomically validate and apply one decision to several requests."""
+        if not request_ids:
+            raise ConsentStateError('group decision has no requests')
+
+        records = []
+        for capability_id, request_id in request_ids.items():
+            record = self._records.get((session_id, capability_id))
+            if record is None or record.request_id != request_id:
+                raise ConsentStateError(
+                    f"no pending request '{request_id}' for "
+                    f"('{session_id}', '{capability_id}')")
+            if record.status is not ConsentStatus.PENDING:
+                raise ConsentStateError(
+                    f'group decision contains {capability_id} in '
+                    f'{record.status.name}, not PENDING')
+            records.append(record)
+
+        return [
+            self.record_decision(
+                record.request_id,
+                session_id,
+                record.capability_id,
+                granted,
+                apply_expiry=apply_expiry,
+            )
+            for record in records
+        ]
 
     def revoke(self, session_id: str, capability_id: str) -> ConsentRecord:
         """Withdraw a granted permission; only GRANTED can be revoked."""

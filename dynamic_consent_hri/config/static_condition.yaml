@@ -1,0 +1,21 @@
+consent_manager:
+  ros__parameters:
+    consent_mode: static
+    policy_file: privacy_policy.yaml
+    static_disclosure: >
+      This robot may use its microphone, camera and location information to
+      provide assistance during this session. Audio, images and location data
+      are processed only for the current interaction and are not stored. You
+      may accept or refuse this once at the start; refusing means the robot
+      will use on-screen alternatives instead.
+
+privacy_gate:
+  ros__parameters:
+    consent_mode: static
+    policy_file: privacy_policy.yaml
+
+scenario_simulator:
+  ros__parameters:
+    consent_mode: static
+    startup_delay_seconds: 2.0
+    stage_delay_seconds: 1.0
