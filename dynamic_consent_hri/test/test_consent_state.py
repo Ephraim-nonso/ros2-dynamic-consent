@@ -77,7 +77,9 @@ class TestDenyByDefault:
         assert result.status is ConsentStatus.UNKNOWN
 
     def test_unknown_capability_denies(self, store):
-        assert not store.check(SESSION, "face_recognition").allowed
+        result = store.check(SESSION, "face_recognition")
+        assert not result.allowed
+        assert result.status is ConsentStatus.INVALID_CAPABILITY
 
     def test_unknown_capability_cannot_be_requested(self, store):
         with pytest.raises(UnknownCapabilityError):

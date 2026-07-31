@@ -31,6 +31,11 @@ class ConsentStatus(Enum):
     REFUSED = 3
     REVOKED = 4
     EXPIRED = 5
+    # Capability id is not defined in the loaded policy at all — distinct
+    # from UNKNOWN (defined but never requested) so a gate can deny
+    # immediately instead of requesting consent for something that can
+    # never be granted.
+    INVALID_CAPABILITY = 6
 
 
 # States from which a new consent request may be created.
@@ -87,7 +92,7 @@ class ConsentStore:
     def check(self, session_id: str, capability_id: str) -> ConsentCheck:
         """Fail-closed consent check for (session, capability)."""
         if capability_id not in self._policy:
-            return ConsentCheck(False, ConsentStatus.UNKNOWN,
+            return ConsentCheck(False, ConsentStatus.INVALID_CAPABILITY,
                                 f"capability '{capability_id}' is not in the policy")
 
         record = self._records.get((session_id, capability_id))

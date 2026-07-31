@@ -52,6 +52,9 @@ consent, wrong session — resolves to **deny** (fail closed).
 | Consent logger | `consent_logger` | Append anonymous consent events to a CSV session log |
 | Scenario simulator | `scenario_simulator` | Drive the deterministic three-stage task scenario |
 
+The manager, gate and terminal UI are implemented in Phase 3. The logger and
+scenario simulator remain planned components.
+
 The policy loader and consent state machine are plain Python modules with no
 `rclpy` dependency; nodes wrap them. This keeps the security-critical logic
 unit-testable without a ROS installation.
@@ -81,6 +84,8 @@ unit-testable without a ROS installation.
 | `/consent/prompt` | `ConsentPrompt` | manager → UI |
 | `/consent/decision` | `ConsentDecision` | UI → manager |
 | `/consent/event` | `ConsentEvent` | manager, gate → logger |
+| `/consent/session` | `std_msgs/String` | manager → gate (transient local) |
+| `/consent/request` | `std_msgs/String` (capability id) | gate → manager |
 | `/capability/requested` | `std_msgs/String` (capability id) | simulator → gate |
 | `/capability/authorized` | `std_msgs/String` | gate → simulator |
 | `/capability/blocked` | `std_msgs/String` | gate → simulator |
@@ -94,3 +99,17 @@ unit-testable without a ROS installation.
 | `log_directory` | `logs` | Where anonymous CSV logs are written |
 | `session_timeout_seconds` | `900` | Hard limit on a participant session |
 | `enable_raw_sensor_storage` | `false` | Must remain false in the study |
+
+## Phase 3 gate sequence
+
+1. A simulated capability id arrives on `/capability/requested`.
+2. The gate rejects an empty or policy-unknown id immediately.
+3. The gate calls `/consent/check` using the manager-owned anonymous session.
+4. `GRANTED` is forwarded on `/capability/authorized`.
+5. `UNKNOWN` or `EXPIRED` publishes `/consent/request` and waits.
+6. `PENDING` remains blocked while the UI waits for explicit input.
+7. `REFUSED` or `REVOKED` publishes `/capability/blocked` and selects the
+   policy fallback.
+
+The gate queues requests until the manager session and check service are
+available, but never authorizes while either is unavailable.
