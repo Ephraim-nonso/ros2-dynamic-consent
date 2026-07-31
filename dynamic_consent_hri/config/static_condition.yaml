@@ -1,0 +1,25 @@
+consent_manager:
+  ros__parameters:
+    consent_mode: static
+    policy_file: privacy_policy.yaml
+    static_disclosure: >
+      During this session, this robot may recognise returning users, listen for
+      a destination, remember preferences for 30 days, analyse body pose, use
+      indoor location, follow a user across a private-space boundary, and send
+      an unrecorded live audio/video stream to authorised building assistance
+      staff. Some identity and preference data may remain on this robot for 30
+      days; other sensor data is not stored or lasts only for the interaction.
+      You may accept or refuse all of these uses once at the start. Refusing
+      selects anonymous, session-only, on-screen, local, or in-person
+      alternatives so the task can still continue.
+
+privacy_gate:
+  ros__parameters:
+    consent_mode: static
+    policy_file: privacy_policy.yaml
+
+scenario_simulator:
+  ros__parameters:
+    consent_mode: static
+    startup_delay_seconds: 2.0
+    stage_delay_seconds: 1.0

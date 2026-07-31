@@ -13,7 +13,15 @@ from typing import Mapping
 
 import yaml
 
-ALLOWED_RETENTION = frozenset({"not_stored", "interaction_only", "session_only"})
+ALLOWED_RETENTION = frozenset({
+    "not_stored", "interaction_only", "session_only", "declared_period",
+})
+ALLOWED_PRIVACY_DIMENSIONS = frozenset({
+    "informational", "physical", "psychological", "social",
+})
+ALLOWED_PROCESSING_LOCATIONS = frozenset({
+    "on_robot", "local_network", "external_service",
+})
 
 
 class PolicyError(Exception):
@@ -24,9 +32,15 @@ class PolicyError(Exception):
 class CapabilityPolicy:
     capability_id: str
     sensor: str
+    privacy_dimensions: tuple[str, ...]
+    data_inputs: tuple[str, ...]
     purpose: str
+    processing: str
+    processing_location: str
+    recipients: tuple[str, ...]
     prompt: str
     retention: str
+    retention_seconds: int
     expiry_seconds: int
     refusal_fallback: str
     required: bool = False
@@ -70,6 +84,32 @@ def _require_string(raw: Mapping, key: str, capability_id: str) -> str:
     return value.strip()
 
 
+def _require_string_list(raw: Mapping, key: str,
+                         capability_id: str) -> tuple[str, ...]:
+    value = raw.get(key)
+    if (not isinstance(value, list) or not value
+            or any(not isinstance(item, str) or not item.strip()
+                   for item in value)):
+        raise PolicyError(
+            f"capability '{capability_id}': '{key}' must be a non-empty "
+            "list of non-empty strings")
+    normalized = tuple(item.strip() for item in value)
+    if len(set(normalized)) != len(normalized):
+        raise PolicyError(
+            f"capability '{capability_id}': '{key}' contains duplicates")
+    return normalized
+
+
+def _require_nonnegative_integer(raw: Mapping, key: str,
+                                 capability_id: str) -> int:
+    value = raw.get(key)
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise PolicyError(
+            f"capability '{capability_id}': '{key}' must be a non-negative "
+            f"integer, got {value!r}")
+    return value
+
+
 def _parse_capability(capability_id, raw: object) -> CapabilityPolicy:
     if not isinstance(capability_id, str) or not capability_id.strip():
         raise PolicyError(f"invalid capability identifier: {capability_id!r}")
@@ -78,7 +118,25 @@ def _parse_capability(capability_id, raw: object) -> CapabilityPolicy:
         raise PolicyError(f"capability '{capability_id}' must be a mapping")
 
     sensor = _require_string(raw, "sensor", capability_id)
+    privacy_dimensions = _require_string_list(
+        raw, "privacy_dimensions", capability_id)
+    unknown_dimensions = set(privacy_dimensions) - ALLOWED_PRIVACY_DIMENSIONS
+    if unknown_dimensions:
+        raise PolicyError(
+            f"capability '{capability_id}': unknown privacy dimensions "
+            f"{sorted(unknown_dimensions)} (allowed: "
+            f"{sorted(ALLOWED_PRIVACY_DIMENSIONS)})")
+    data_inputs = _require_string_list(raw, "data_inputs", capability_id)
     purpose = _require_string(raw, "purpose", capability_id)
+    processing = _require_string(raw, "processing", capability_id)
+    processing_location = _require_string(
+        raw, "processing_location", capability_id)
+    if processing_location not in ALLOWED_PROCESSING_LOCATIONS:
+        raise PolicyError(
+            f"capability '{capability_id}': unknown processing location "
+            f"'{processing_location}' (allowed: "
+            f"{sorted(ALLOWED_PROCESSING_LOCATIONS)})")
+    recipients = _require_string_list(raw, "recipients", capability_id)
     prompt = _require_string(raw, "prompt", capability_id)
     retention = _require_string(raw, "retention", capability_id)
     fallback = _require_string(raw, "refusal_fallback", capability_id)
@@ -88,11 +146,19 @@ def _parse_capability(capability_id, raw: object) -> CapabilityPolicy:
             f"capability '{capability_id}': unknown retention '{retention}' "
             f"(allowed: {sorted(ALLOWED_RETENTION)})")
 
-    expiry = raw.get("expiry_seconds")
-    if isinstance(expiry, bool) or not isinstance(expiry, int) or expiry < 0:
+    retention_seconds = _require_nonnegative_integer(
+        raw, "retention_seconds", capability_id)
+    if retention == "declared_period" and retention_seconds == 0:
         raise PolicyError(
-            f"capability '{capability_id}': 'expiry_seconds' must be a "
-            f"non-negative integer, got {expiry!r}")
+            f"capability '{capability_id}': declared-period retention "
+            "requires 'retention_seconds' greater than zero")
+    if retention != "declared_period" and retention_seconds != 0:
+        raise PolicyError(
+            f"capability '{capability_id}': 'retention_seconds' must be zero "
+            f"when retention is '{retention}'")
+
+    expiry = _require_nonnegative_integer(
+        raw, "expiry_seconds", capability_id)
 
     required = raw.get("required", False)
     if not isinstance(required, bool):
@@ -102,9 +168,15 @@ def _parse_capability(capability_id, raw: object) -> CapabilityPolicy:
     return CapabilityPolicy(
         capability_id=capability_id,
         sensor=sensor,
+        privacy_dimensions=privacy_dimensions,
+        data_inputs=data_inputs,
         purpose=purpose,
+        processing=processing,
+        processing_location=processing_location,
+        recipients=recipients,
         prompt=prompt,
         retention=retention,
+        retention_seconds=retention_seconds,
         expiry_seconds=expiry,
         refusal_fallback=fallback,
         required=required,

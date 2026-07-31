@@ -21,20 +21,32 @@ from dynamic_consent_hri.consent_state import (
 from dynamic_consent_hri.policy_loader import parse_policy
 
 POLICY = parse_policy("""
-policy_version: "1.0"
+policy_version: "2.0"
 capabilities:
   speech_input:
     sensor: microphone
+    privacy_dimensions: [informational]
+    data_inputs: [live_audio]
     purpose: "Understand the destination"
+    processing: "Transcribe live audio"
+    processing_location: on_robot
+    recipients: [robot_assistance_system]
     prompt: "May I use the microphone?"
     retention: "not_stored"
+    retention_seconds: 0
     expiry_seconds: 300
     refusal_fallback: "show_destination_menu"
   route_guidance:
     sensor: location
+    privacy_dimensions: [informational, physical]
+    data_inputs: [current_indoor_location]
     purpose: "Provide navigation"
+    processing: "Calculate a local route"
+    processing_location: on_robot
+    recipients: [robot_navigation_system]
     prompt: "May I use your location?"
     retention: "interaction_only"
+    retention_seconds: 0
     expiry_seconds: 0
     refusal_fallback: "show_written_route"
 """)
@@ -127,7 +139,7 @@ class TestGrantRefuse:
     def test_stale_request_id_rejected(self, store):
         old = store.create_request(SESSION, CAP)
         store.record_decision(old.request_id, SESSION, CAP, granted=False)
-        new = store.create_request(SESSION, CAP)
+        store.create_request(SESSION, CAP)
         with pytest.raises(ConsentStateError):
             store.record_decision(old.request_id, SESSION, CAP, granted=True)
         assert not store.check(SESSION, CAP).allowed
@@ -149,6 +161,35 @@ class TestGrantRefuse:
         first = store.create_request(SESSION, CAP)
         second = store.create_request(SESSION, CAP)
         assert second.request_id == first.request_id
+
+    def test_group_grant_can_last_for_whole_session(self, store, clock):
+        speech = store.create_request(SESSION, CAP)
+        route = store.create_request(SESSION, 'route_guidance')
+        records = store.record_group_decision(
+            SESSION,
+            {CAP: speech.request_id,
+             'route_guidance': route.request_id},
+            granted=True,
+            apply_expiry=False,
+        )
+        assert {record.status for record in records} == {
+            ConsentStatus.GRANTED}
+        clock.advance(100000)
+        assert store.check(SESSION, CAP).allowed
+
+    def test_group_decision_validation_is_atomic(self, store):
+        speech = store.create_request(SESSION, CAP)
+        store.create_request(SESSION, 'route_guidance')
+        with pytest.raises(ConsentStateError):
+            store.record_group_decision(
+                SESSION,
+                {CAP: speech.request_id,
+                 'route_guidance': 'stale-request'},
+                granted=True,
+            )
+        assert store.check(SESSION, CAP).status is ConsentStatus.PENDING
+        assert (store.check(SESSION, 'route_guidance').status
+                is ConsentStatus.PENDING)
 
 
 class TestRevocation:

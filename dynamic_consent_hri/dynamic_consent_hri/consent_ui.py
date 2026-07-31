@@ -14,6 +14,7 @@ from rclpy.node import Node
 
 from dynamic_consent_interfaces.msg import ConsentDecision, ConsentPrompt
 
+from .ros_qos import PROMPT_QOS
 from .ui_logic import (PromptView, UiChoice, format_more_information,
                        format_prompt, parse_choice)
 
@@ -24,9 +25,15 @@ def _to_view(msg: ConsentPrompt) -> PromptView:
         session_id=msg.session_id,
         capability_id=msg.capability_id,
         sensor=msg.sensor,
+        privacy_dimensions=tuple(msg.privacy_dimensions),
+        data_inputs=tuple(msg.data_inputs),
         purpose=msg.purpose,
+        processing=msg.processing,
+        processing_location=msg.processing_location,
+        recipients=tuple(msg.recipients),
         prompt_text=msg.prompt_text,
         retention=msg.retention,
+        retention_seconds=msg.retention_seconds,
         expiry_seconds=msg.expiry_seconds,
     )
 
@@ -38,7 +45,7 @@ class ConsentUiNode(Node):
         self._decision_pub = self.create_publisher(
             ConsentDecision, '/consent/decision', 10)
         self.create_subscription(
-            ConsentPrompt, '/consent/prompt', self._on_prompt, 10)
+            ConsentPrompt, '/consent/prompt', self._on_prompt, PROMPT_QOS)
         self._answered_requests: set[str] = set()
         self._input_stream = self._open_terminal_input()
         self.get_logger().info('terminal consent UI ready')

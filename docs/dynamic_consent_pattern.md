@@ -32,35 +32,28 @@ Allowed transitions are enforced by the consent manager:
 - `EXPIRED | REFUSED | REVOKED → PENDING` (re-prompt, dynamic mode only)
 - any state `→ UNKNOWN` (session reset)
 
-## Frozen capabilities (Phase 0)
+## Privacy-dimension capabilities
 
-| Capability id | Sensor | Purpose | Refusal fallback |
+The policy unit is a purpose-specific capability, not a hardware permission.
+For example, `person_recognition` and `body_pose_tracking` may both use camera
+data but receive separate decisions because their processing and privacy
+effects differ.
+
+| Capability id | Dimensions | Purpose | Retention / recipient |
 |---|---|---|---|
-| `speech_input` | microphone | Understand the user's destination | Text destination menu |
-| `gesture_recognition` | camera | Detect where the user is pointing | On-screen direction buttons |
-| `route_guidance` | location | Guide the user through the building | Display written directions |
+| `person_recognition` | informational, social | Recognise a returning user | Identity template on robot for 30 days |
+| `speech_input` | informational | Understand a destination | Not stored; robot assistance system only |
+| `interaction_memory` | informational, psychological | Remember destinations and preferences | Profile on robot for 30 days |
+| `body_pose_tracking` | informational, physical | Detect pointing, mobility difficulty, or a possible fall | Not stored; on-robot processing |
+| `route_guidance` | informational, physical | Provide indoor navigation | Current interaction only |
+| `proximity_or_private_space_access` | physical, social | Follow a user or cross a private boundary | Current interaction only |
+| `remote_assistance_stream` | informational, social | Connect remote assistance | Unrecorded live stream to authorised building assistance staff |
 
-## Static disclosure wording (frozen)
-
-> This robot may use its microphone, camera and location information to
-> provide assistance during this session. Audio, images and location data are
-> processed only for the current interaction and are not stored. You may
-> accept or refuse this once at the start; refusing means the robot will use
-> on-screen alternatives instead.
-
-## Dynamic prompts (frozen)
-
-**speech_input**
-> To understand your destination, may I use the microphone? Audio will be
-> processed for this interaction and will not be stored.
-
-**gesture_recognition**
-> To see where you are pointing, may I temporarily use the camera? Images
-> will be processed for this interaction and will not be stored.
-
-**route_guidance**
-> To guide you there, may I use your current location inside the building?
-> Your location history will not be stored.
+The static condition presents one combined disclosure containing all seven
+purposes. The dynamic condition presents the policy entry at the moment its
+scenario stage begins. In particular, remote assistance explicitly identifies
+the human recipient instead of describing the operation as generic camera
+access.
 
 ## Refusal behaviour
 
@@ -69,9 +62,13 @@ fallback so the task always completes:
 
 | Capability | Fallback id | Behaviour |
 |---|---|---|
+| `person_recognition` | `start_anonymous_temporary_session` | Continue without recognising or enrolling the participant |
 | `speech_input` | `show_destination_menu` | List of destinations to choose from |
-| `gesture_recognition` | `show_direction_buttons` | Left/right/ahead buttons |
+| `interaction_memory` | `use_session_only_memory` | Forget preferences when the session ends |
+| `body_pose_tracking` | `show_direction_and_assistance_controls` | Explicit direction and help controls |
 | `route_guidance` | `show_written_route` | Static written directions |
+| `proximity_or_private_space_access` | `wait_at_boundary_and_show_instructions` | Remain outside and provide instructions |
+| `remote_assistance_stream` | `show_local_help_or_request_in_person_staff` | Keep data local or request an in-person staff member |
 
 ## Revocation
 
@@ -85,3 +82,16 @@ The Phase 3 UI publishes only explicit allow or refuse decisions. Viewing
 more information returns to the same choice, while invalid input asks again.
 EOF, terminal closure and UI failure publish nothing. The manager therefore
 keeps the request `PENDING`, and the gate cannot forward the capability.
+
+## Condition semantics
+
+In the dynamic condition, `UNKNOWN` and `EXPIRED` consent trigger a
+capability-specific prompt. Refused or revoked consent runs the configured
+fallback.
+
+In the static condition, the manager creates pending records for every policy
+capability and presents one combined prompt at session start. The single
+decision is validated for every record before any record is changed, avoiding
+a partially granted session. A static grant lasts for the session; refusal or
+later revocation causes the relevant fallback and never triggers a dynamic
+prompt.

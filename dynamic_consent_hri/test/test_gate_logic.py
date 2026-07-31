@@ -21,3 +21,10 @@ def test_gate_action_is_fail_closed(status, expected):
 def test_unhandled_status_is_rejected():
     with pytest.raises(ValueError, match='unhandled'):
         decide(object())
+
+
+def test_static_condition_does_not_reprompt_expired_consent():
+    assert decide(
+        ConsentStatus.EXPIRED,
+        reprompt_expired=False,
+    ) is GateAction.FALLBACK

@@ -5,8 +5,9 @@
 ```
                      ┌─────────────────────┐
                      │ privacy_policy.yaml │
-                     │ sensors, purposes,  │
-                     │ prompts, retention  │
+                     │ purpose, dimensions,│
+                     │ processing, sharing,│
+                     │ retention, fallback │
                      └──────────┬──────────┘
                                 │
                          Policy Loader
@@ -50,10 +51,11 @@ consent, wrong session — resolves to **deny** (fail closed).
 | Privacy gate | `privacy_gate` | Enforce consent before forwarding capability requests; trigger prompts and fallbacks |
 | Consent UI | `consent_ui` | Present prompts to the participant; publish decisions |
 | Consent logger | `consent_logger` | Append anonymous consent events to a CSV session log |
-| Scenario simulator | `scenario_simulator` | Drive the deterministic three-stage task scenario |
+| Scenario simulator | `scenario_simulator` | Drive the deterministic seven-stage privacy-dimension scenario |
 
-The manager, gate and terminal UI are implemented in Phase 3. The logger and
-scenario simulator remain planned components.
+The manager, gate and terminal UI were implemented in Phase 3. Phase 4 adds
+the deterministic scenario simulator and condition launch files. The logger
+remains a planned Phase 5 component.
 
 The policy loader and consent state machine are plain Python modules with no
 `rclpy` dependency; nodes wrap them. This keeps the security-critical logic
@@ -89,6 +91,7 @@ unit-testable without a ROS installation.
 | `/capability/requested` | `std_msgs/String` (capability id) | simulator → gate |
 | `/capability/authorized` | `std_msgs/String` | gate → simulator |
 | `/capability/blocked` | `std_msgs/String` | gate → simulator |
+| `/scenario/status` | `std_msgs/String` | simulator → observer |
 
 ## Parameters
 
@@ -99,6 +102,34 @@ unit-testable without a ROS installation.
 | `log_directory` | `logs` | Where anonymous CSV logs are written |
 | `session_timeout_seconds` | `900` | Hard limit on a participant session |
 | `enable_raw_sensor_storage` | `false` | Must remain false in the study |
+| `static_disclosure` | frozen combined notice | Opening static notice |
+| `startup_delay_seconds` | `2.0` | Delay before scenario stage 1 |
+| `stage_delay_seconds` | `1.0` | Delay between scenario stages |
+
+## Purpose-centred policy contract
+
+A capability is not authorised merely by naming a sensor. Each policy entry
+declares the complete processing context shown to the participant:
+
+| Field | Meaning |
+|---|---|
+| `privacy_dimensions` | One or more of informational, physical, psychological, social |
+| `data_inputs` | Raw or derived data needed by the capability |
+| `purpose` | The concrete assistance the capability provides |
+| `processing` | What the robot does with the inputs, including inference or disclosure |
+| `processing_location` | `on_robot`, `local_network`, or `external_service` |
+| `recipients` | Systems or people that can receive the data |
+| `retention` | `not_stored`, `interaction_only`, `session_only`, or `declared_period` |
+| `retention_seconds` | Positive duration required for `declared_period`; zero otherwise |
+| `refusal_fallback` | Functionally useful action selected when consent is absent |
+
+The policy loader rejects missing fields, unknown dimensions or processing
+locations, invalid retention combinations, duplicate list values, and malformed
+types. An invalid policy leaves both manager and gate in the fail-closed state.
+
+`ConsentPrompt` carries the same context to the terminal UI. The first view
+shows purpose, privacy dimensions, recipients, and retention. “View more
+information” adds inputs, processing operation, and processing location.
 
 ## Phase 3 gate sequence
 
@@ -113,3 +144,17 @@ unit-testable without a ROS installation.
 
 The gate queues requests until the manager session and check service are
 available, but never authorizes while either is unavailable.
+
+## Phase 4 condition boundary
+
+Both launch files construct the same four nodes and use the same seven
+scenario stages. The condition configuration changes only consent timing:
+
+- `static`: one combined decision is atomically applied to all capabilities
+  at session start and remains valid for that session.
+- `dynamic`: each capability is requested when its scenario stage begins and
+  retains the expiry configured in `privacy_policy.yaml`.
+
+The condition files use identical startup and inter-stage delays. Scenario
+outcomes are published as `capability_executed` or `fallback_executed` events,
+ready for the Phase 5 anonymous logger.

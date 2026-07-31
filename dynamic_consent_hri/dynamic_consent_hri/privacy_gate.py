@@ -11,6 +11,7 @@ from std_msgs.msg import String
 from dynamic_consent_interfaces.msg import ConsentEvent
 from dynamic_consent_interfaces.srv import CheckConsent
 
+from .conditions import validate_consent_mode
 from .consent_state import ConsentStatus
 from .gate_logic import GateAction, decide
 from .package_paths import resolve_policy_path
@@ -28,7 +29,12 @@ class PrivacyGateNode(Node):
         self.declare_parameter('consent_mode', 'dynamic')
 
         self._session_id = str(self.get_parameter('session_id').value)
-        self._condition = str(self.get_parameter('consent_mode').value)
+        raw_condition = self.get_parameter('consent_mode').value
+        try:
+            self._condition = validate_consent_mode(raw_condition)
+        except ValueError as exc:
+            self._condition = 'invalid'
+            self.get_logger().error(f'{exc}; gate will fail closed')
         self._policy = self._load_policy()
         self._pending: set[str] = set()
         self._queued: set[str] = set()
@@ -138,7 +144,10 @@ class PrivacyGateNode(Node):
 
         try:
             status = ConsentStatus(result.status)
-            action = decide(status)
+            action = decide(
+                status,
+                reprompt_expired=self._condition == 'dynamic',
+            )
         except (ValueError, TypeError) as exc:
             self._block(capability_id,
                         f'unrecognized consent status: {exc}')
