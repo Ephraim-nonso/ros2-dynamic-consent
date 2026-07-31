@@ -9,7 +9,6 @@ events. If the policy fails to load, the node stays up but denies everything
 from __future__ import annotations
 
 import time
-import uuid
 
 import rclpy
 from rclpy.node import Node
@@ -22,19 +21,11 @@ from dynamic_consent_interfaces.srv import (CheckConsent, ResetSession,
 
 from .consent_state import (ConsentRecord, ConsentStateError, ConsentStore,
                             UnknownCapabilityError)
+from .package_paths import resolve_policy_path
 from .policy_loader import PolicyError, load_policy
+from .ros_qos import SESSION_QOS
 from .ros_time import to_time_msg
-
-
-def resolve_policy_path(policy_file: str) -> str:
-    """Resolve a policy file against the installed package share directory
-    unless an absolute path was given."""
-    import os
-    if os.path.isabs(policy_file):
-        return policy_file
-    from ament_index_python.packages import get_package_share_directory
-    share = get_package_share_directory('dynamic_consent_hri')
-    return os.path.join(share, 'config', policy_file)
+from .session import generate_session_id
 
 
 class ConsentManagerNode(Node):
@@ -48,7 +39,7 @@ class ConsentManagerNode(Node):
 
         self._condition = self.get_parameter('consent_mode').value
         self._session_id = (self.get_parameter('session_id').value
-                            or f'session_{uuid.uuid4().hex[:8]}')
+                            or generate_session_id())
         self.get_logger().info(
             f'session {self._session_id}, condition {self._condition}')
 
@@ -56,6 +47,8 @@ class ConsentManagerNode(Node):
             ConsentEvent, '/consent/event', 10)
         self._prompt_pub = self.create_publisher(
             ConsentPrompt, '/consent/prompt', 10)
+        self._session_pub = self.create_publisher(
+            String, '/consent/session', SESSION_QOS)
 
         self._policy = None
         self._store: ConsentStore | None = None
@@ -83,6 +76,9 @@ class ConsentManagerNode(Node):
         self.create_service(
             ResetSession, '/consent/reset_session', self._on_reset)
 
+        session_msg = String()
+        session_msg.data = self._session_id
+        self._session_pub.publish(session_msg)
         self._publish_event('session_started')
 
     # -- topic callbacks --------------------------------------------------
@@ -113,6 +109,12 @@ class ConsentManagerNode(Node):
             self.get_logger().warning(
                 f'decision for wrong session {msg.session_id!r} ignored')
             return
+        valid_decisions = (ConsentDecision.GRANTED, ConsentDecision.REFUSED,
+                           ConsentDecision.REVOKED)
+        if msg.decision not in valid_decisions:
+            self.get_logger().warning(
+                f'invalid decision value {msg.decision} ignored')
+            return
         try:
             if msg.decision == ConsentDecision.REVOKED:
                 record = self._store.revoke(msg.session_id, msg.capability_id)
@@ -137,7 +139,8 @@ class ConsentManagerNode(Node):
     def _on_check(self, request, response):
         if self._store is None:
             response.allowed = False
-            response.status = CheckConsent.Response.STATUS_UNKNOWN
+            response.status = (
+                CheckConsent.Response.STATUS_INVALID_CAPABILITY)
             response.reason = 'policy invalid; failing closed'
             return response
         result = self._store.check(request.session_id, request.capability_id)

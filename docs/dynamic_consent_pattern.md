@@ -18,6 +18,7 @@ GRANTED → EXPIRED
 | `REFUSED` | Participant declined | DENY, run fallback |
 | `REVOKED` | Participant withdrew consent | DENY, run fallback |
 | `EXPIRED` | Time-limited consent lapsed | DENY, re-prompt |
+| `INVALID_CAPABILITY` | Not defined by policy | DENY, no prompt |
 
 `GRANTED` is the **only** state that allows a capability. Closing or crashing
 the UI never grants; an undecided prompt stays `PENDING` and is denied.
@@ -77,3 +78,10 @@ fallback so the task always completes:
 At any time the participant can revoke a granted permission. Revocation takes
 effect immediately: the next capability request is denied and the fallback is
 used. Revocation is visible in the UI and logged as a `consent_revoked` event.
+
+## Terminal decision semantics
+
+The Phase 3 UI publishes only explicit allow or refuse decisions. Viewing
+more information returns to the same choice, while invalid input asks again.
+EOF, terminal closure and UI failure publish nothing. The manager therefore
+keeps the request `PENDING`, and the gate cannot forward the capability.
