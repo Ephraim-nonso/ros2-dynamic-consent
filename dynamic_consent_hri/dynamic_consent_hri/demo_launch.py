@@ -21,6 +21,8 @@ def generate_demo_launch_description(condition_file: str) -> LaunchDescription:
         Node(executable='privacy_gate', name='privacy_gate',
              parameters=parameters, **common),
         Node(executable='consent_ui', name='consent_ui', **common),
+        Node(executable='consent_logger', name='consent_logger',
+             parameters=parameters, **common),
         Node(executable='scenario_simulator', name='scenario_simulator',
              parameters=parameters, **common),
     ])

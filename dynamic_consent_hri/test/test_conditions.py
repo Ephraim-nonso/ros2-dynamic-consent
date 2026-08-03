@@ -30,7 +30,8 @@ def test_condition_configs_start_identical_parameterized_nodes():
     static = _load_condition('static_condition.yaml')
     dynamic = _load_condition('dynamic_condition.yaml')
     expected_nodes = {
-        'consent_manager', 'privacy_gate', 'scenario_simulator'}
+        'consent_manager', 'privacy_gate', 'consent_logger',
+        'scenario_simulator'}
     assert set(static) == expected_nodes
     assert set(dynamic) == expected_nodes
 
@@ -53,10 +54,25 @@ def test_scenario_parameters_are_identical_between_conditions():
     assert static_params == dynamic_params
 
 
+def test_logger_is_anonymous_and_identical_between_conditions():
+    static = _load_condition('static_condition.yaml')
+    dynamic = _load_condition('dynamic_condition.yaml')
+    static_params = dict(static['consent_logger']['ros__parameters'])
+    dynamic_params = dict(dynamic['consent_logger']['ros__parameters'])
+    static_params.pop('consent_mode')
+    dynamic_params.pop('consent_mode')
+    assert static_params == dynamic_params
+    assert static_params['enable_raw_sensor_storage'] is False
+    assert static_params['session_timeout_seconds'] == 900.0
+    assert static_params['log_directory'].endswith(
+        '/dynamic_consent/logs')
+
+
 def test_only_declared_consent_design_parameters_differ():
     static = _load_condition('static_condition.yaml')
     dynamic = _load_condition('dynamic_condition.yaml')
-    for node_name in ('privacy_gate', 'scenario_simulator'):
+    for node_name in ('privacy_gate', 'consent_logger',
+                      'scenario_simulator'):
         static_params = dict(static[node_name]['ros__parameters'])
         dynamic_params = dict(dynamic[node_name]['ros__parameters'])
         static_params.pop('consent_mode')

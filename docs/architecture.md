@@ -54,8 +54,9 @@ consent, wrong session — resolves to **deny** (fail closed).
 | Scenario simulator | `scenario_simulator` | Drive the deterministic seven-stage privacy-dimension scenario |
 
 The manager, gate and terminal UI were implemented in Phase 3. Phase 4 adds
-the deterministic scenario simulator and condition launch files. The logger
-remains a planned Phase 5 component.
+the deterministic scenario simulator, purpose-centred policy, and condition
+launch files. Phase 5 adds the strict anonymous event logger to both study
+conditions.
 
 The policy loader and consent state machine are plain Python modules with no
 `rclpy` dependency; nodes wrap them. This keeps the security-critical logic
@@ -99,9 +100,9 @@ unit-testable without a ROS installation.
 |---|---|---|
 | `consent_mode` | `dynamic` | `static` or `dynamic` prompting |
 | `policy_file` | `privacy_policy.yaml` | Policy to load |
-| `log_directory` | `logs` | Where anonymous CSV logs are written |
-| `session_timeout_seconds` | `900` | Hard limit on a participant session |
-| `enable_raw_sensor_storage` | `false` | Must remain false in the study |
+| `log_directory` | `~/.ros/dynamic_consent/logs` | Private per-session CSV directory |
+| `session_timeout_seconds` | `900` | Stop accepting events after this session duration |
+| `enable_raw_sensor_storage` | `false` | Must be false or the logger disables itself |
 | `static_disclosure` | frozen combined notice | Opening static notice |
 | `startup_delay_seconds` | `2.0` | Delay before scenario stage 1 |
 | `stage_delay_seconds` | `1.0` | Delay between scenario stages |
@@ -157,4 +158,30 @@ scenario stages. The condition configuration changes only consent timing:
 
 The condition files use identical startup and inter-stage delays. Scenario
 outcomes are published as `capability_executed` or `fallback_executed` events,
-ready for the Phase 5 anonymous logger.
+which the Phase 5 logger validates before writing.
+
+## Phase 5 anonymous logging boundary
+
+The logger subscribes to the manager-owned transient session id and accepts
+events only for that active anonymous session and configured condition. Its
+ROS-free core enforces the frozen eight-column schema and event-specific
+relationships—for example, only `consent_decided` may contain response time,
+and only execution events may contain task outcomes.
+
+The logger provides the following safeguards:
+
+- session ids must match `session_[0-9a-f]{8}` and cannot select a path;
+- capability ids are restricted tokens, never participant-entered text;
+- conditions, event types, decisions, and outcomes use closed allow-lists;
+- timestamps are normalised to ISO 8601 UTC;
+- one CSV is created per session with directory mode `0700` and file mode
+  `0600`;
+- every row is flushed and synchronised to disk;
+- existing files with another header and symbolic-link targets are rejected;
+- malformed or cross-session events are never written;
+- enabling raw sensor storage disables the node rather than weakening the
+  study protocol.
+
+The logger owns the `session_started` row. This avoids losing it if the
+manager's event is published before the logger subscription is ready; a later
+duplicate manager event is ignored.
