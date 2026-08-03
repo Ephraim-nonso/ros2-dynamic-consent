@@ -62,9 +62,10 @@ the controlling terminal. Observe the deterministic flow with:
 ros2 topic echo /scenario/status
 ```
 
-## Anonymous logging schema (frozen)
+## Anonymous logging schema (implemented)
 
-One CSV file per session, named by the random session id.
+One CSV file per session, named by the validated random session id. By default,
+files are written to `~/.ros/dynamic_consent/logs`.
 
 ```
 session_id,condition,event_type,capability,decision,timestamp,response_ms,task_outcome
@@ -85,3 +86,20 @@ session_id,condition,event_type,capability,decision,timestamp,response_ms,task_o
 addresses, exact location histories, free-text answers. Questionnaire
 demographics live in a separate dataset joined only via the anonymous
 participant code.
+
+The Phase 5 logger enforces this structurally: `ConsentEvent` has no raw-data
+field, the CSV writer accepts exactly the eight fields above, and all string
+values are closed tokens rather than participant-entered text. A malformed
+event, wrong session, wrong condition, invalid existing CSV, logging timeout,
+or I/O failure is rejected and cannot be silently converted into an
+authorised capability outcome.
+
+Inspect a completed session on Ubuntu with:
+
+```bash
+ls -l ~/.ros/dynamic_consent/logs
+column -s, -t < ~/.ros/dynamic_consent/logs/session_XXXXXXXX.csv
+```
+
+Session logs are research data and remain outside the Git repository. Do not
+commit or copy them into `dynamic_consent_hri/logs`.

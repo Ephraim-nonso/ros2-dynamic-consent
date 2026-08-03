@@ -30,6 +30,7 @@ setup(
             'consent_manager = dynamic_consent_hri.consent_manager:main',
             'privacy_gate = dynamic_consent_hri.privacy_gate:main',
             'consent_ui = dynamic_consent_hri.consent_ui:main',
+            'consent_logger = dynamic_consent_hri.consent_logger:main',
             'scenario_simulator = dynamic_consent_hri.scenario_simulator:main',
         ],
     },

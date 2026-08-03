@@ -8,6 +8,13 @@ privacy_gate:
     consent_mode: dynamic
     policy_file: privacy_policy.yaml
 
+consent_logger:
+  ros__parameters:
+    consent_mode: dynamic
+    log_directory: "~/.ros/dynamic_consent/logs"
+    session_timeout_seconds: 900.0
+    enable_raw_sensor_storage: false
+
 scenario_simulator:
   ros__parameters:
     consent_mode: dynamic
