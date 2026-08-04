@@ -96,11 +96,20 @@ def test_manifest_declares_ros_gz_runtime_dependencies():
     }
     assert {
         'geometry_msgs',
+        'nav_msgs',
         'std_srvs',
         'ros_gz_bridge',
         'ros_gz_interfaces',
         'ros_gz_sim',
     } <= dependencies
+
+
+def test_manifest_declares_launch_integration_test_dependency():
+    root = ET.parse(PACKAGE_DIR / 'package.xml').getroot()
+    test_dependencies = {
+        element.text for element in root if element.tag == 'test_depend'
+    }
+    assert {'python3-pytest', 'launch_pytest'} <= test_dependencies
 
 
 def test_launch_includes_dashboard_and_coordinated_world_reset():
@@ -110,3 +119,5 @@ def test_launch_includes_dashboard_and_coordinated_world_reset():
     assert 'experiment_controller' in source
     assert '/world/dynamic_consent_world/control' in source
     assert 'ros_gz_interfaces/srv/ControlWorld' in source
+    assert '/model/consent_robot/odometry' in source
+    assert 'nav_msgs/msg/Odometry' in source

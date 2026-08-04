@@ -56,6 +56,8 @@ def generate_gazebo_demo_launch_description(
             arguments=[
                 '/model/consent_robot/cmd_vel'
                 '@geometry_msgs/msg/Twist@gz.msgs.Twist',
+                '/model/consent_robot/odometry'
+                '@nav_msgs/msg/Odometry@gz.msgs.Odometry',
                 '/world/dynamic_consent_world/control'
                 '@ros_gz_interfaces/srv/ControlWorld',
             ],

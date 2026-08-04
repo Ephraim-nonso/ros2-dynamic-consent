@@ -64,6 +64,8 @@ conditions. Phase 6 adds a shared Gazebo world and outcome visualisation while
 leaving all consent decisions in the existing manager and gate. Phase 7 adds
 the embodied assistance environment, stage-specific actions, study dashboard,
 and repeatable experiment reset.
+Phase 8 adds live-node contract tests, failure injection, bridged odometry
+observation, and a complete headless Gazebo smoke/reset test.
 
 The policy loader and consent state machine are plain Python modules with no
 `rclpy` dependency; nodes wrap them. This keeps the security-critical logic
@@ -102,6 +104,7 @@ unit-testable without a ROS installation.
 | `/scenario/status` | `std_msgs/String` | simulator → observer |
 | `/gazebo_demo/status` | `std_msgs/String` | motion adapter → observer |
 | `/model/consent_robot/cmd_vel` | `geometry_msgs/Twist` | motion adapter → Gazebo bridge |
+| `/model/consent_robot/odometry` | `nav_msgs/Odometry` | Gazebo bridge → integration observer |
 | `/study/status` | `std_msgs/String` | study dashboard → participant/observer |
 | `/study/control_status` | `std_msgs/String` | experiment controller → dashboard/experimenter |
 
@@ -244,3 +247,17 @@ the supported world-control bridge. Only after Gazebo confirms success does it
 ask the manager to clear the active consent state and publish a newly generated
 anonymous session. That publication resets the logger, gate, and scenario. A
 reset request for a stale session is rejected.
+
+## Phase 8 verification boundary
+
+Phase 8 uses `launch_pytest` to run the manager and gate as separate processes
+for both consent conditions. It covers unanswered prompts, explicit grants,
+revocation, static session rotation, unavailable consent services, and missing
+policies. The assertions observe public ROS interfaces rather than importing
+node internals.
+
+The end-to-end suite launches the full dynamic study without a graphical
+client. It drives all seven prompts, confirms ordered scenario and dashboard
+completion, measures physical progress through bridged odometry, then resets
+Gazebo and verifies a new anonymous session. The integration tests skip on
+hosts without ROS; all ROS-free security tests continue to run there.
