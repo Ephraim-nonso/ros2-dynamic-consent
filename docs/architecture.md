@@ -52,11 +52,14 @@ consent, wrong session — resolves to **deny** (fail closed).
 | Consent UI | `consent_ui` | Present prompts to the participant; publish decisions |
 | Consent logger | `consent_logger` | Append anonymous consent events to a CSV session log |
 | Scenario simulator | `scenario_simulator` | Drive the deterministic seven-stage privacy-dimension scenario |
+| Gazebo motion adapter | `gazebo_motion_adapter` | Convert validated scenario outcomes into bounded visual motion; never decide consent |
+| Gazebo bridge | `parameter_bridge` | Carry ROS `Twist` commands to the Harmonic `DiffDrive` system |
 
 The manager, gate and terminal UI were implemented in Phase 3. Phase 4 adds
 the deterministic scenario simulator, purpose-centred policy, and condition
 launch files. Phase 5 adds the strict anonymous event logger to both study
-conditions.
+conditions. Phase 6 adds a shared Gazebo world and outcome visualisation while
+leaving all consent decisions in the existing manager and gate.
 
 The policy loader and consent state machine are plain Python modules with no
 `rclpy` dependency; nodes wrap them. This keeps the security-critical logic
@@ -93,6 +96,8 @@ unit-testable without a ROS installation.
 | `/capability/authorized` | `std_msgs/String` | gate → simulator |
 | `/capability/blocked` | `std_msgs/String` | gate → simulator |
 | `/scenario/status` | `std_msgs/String` | simulator → observer |
+| `/gazebo_demo/status` | `std_msgs/String` | motion adapter → observer |
+| `/model/consent_robot/cmd_vel` | `geometry_msgs/Twist` | motion adapter → Gazebo bridge |
 
 ## Parameters
 
@@ -106,6 +111,11 @@ unit-testable without a ROS installation.
 | `static_disclosure` | frozen combined notice | Opening static notice |
 | `startup_delay_seconds` | `2.0` | Delay before scenario stage 1 |
 | `stage_delay_seconds` | `1.0` | Delay between scenario stages |
+| `cmd_vel_topic` | `/model/consent_robot/cmd_vel` | Gazebo robot velocity topic |
+| `forward_speed` | `0.5` | Allowed-outcome linear speed in m/s |
+| `forward_duration_seconds` | `0.8` | Allowed-outcome motion duration |
+| `turn_speed` | `0.8` | Fallback acknowledgement angular speed in rad/s |
+| `turn_duration_seconds` | `0.3` | Duration of each acknowledgement turn |
 
 ## Purpose-centred policy contract
 
@@ -185,3 +195,21 @@ The logger provides the following safeguards:
 The logger owns the `session_started` row. This avoids losing it if the
 manager's event is published before the logger subscription is ready; a later
 duplicate manager event is ignored.
+
+## Phase 6 Gazebo boundary
+
+The Phase 6 adapter subscribes only to `/scenario/status`; it cannot call the
+consent service or manufacture an authorised outcome. Its ROS-free parser
+accepts exact statuses for the frozen seven stages. An authorised capability
+moves the robot forward for a bounded time, while a fallback turns left and
+right with zero linear velocity. Ready, requested, and complete states stop.
+
+Both Gazebo condition launches reuse the same world, adapter parameters, ROS–
+Gazebo bridge, and scenario constructor. The world contains a red private-space
+boundary positioned so Stage 6 crosses it only after an authorised outcome.
+When the preceding five stages were granted, refusal executes the existing
+policy fallback and keeps the robot immediately outside.
+
+The world is self-contained and uses Gazebo Harmonic's `DiffDrive` system.
+GUI launches default to the Ogre 1 render engine for the UTM graphics context;
+server-only mode is available without changing the consent experiment.

@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <world name="dynamic_consent_world">
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+
+    <gravity>0 0 -9.8</gravity>
+    <scene>
+      <ambient>0.7 0.7 0.7 1</ambient>
+      <background>0.12 0.15 0.20 1</background>
+    </scene>
+    <light name="ceiling_light" type="directional">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 8 0 0 0</pose>
+      <diffuse>0.9 0.9 0.9 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.25 0.15 -1</direction>
+    </light>
+
+    <model name="building_floor">
+      <static>true</static>
+      <link name="floor_link">
+        <collision name="floor_collision">
+          <geometry><box><size>12 7 0.1</size></box></geometry>
+        </collision>
+        <visual name="floor_visual">
+          <geometry><box><size>12 7 0.1</size></box></geometry>
+          <material><ambient>0.55 0.58 0.62 1</ambient><diffuse>0.55 0.58 0.62 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="north_wall">
+      <static>true</static><pose>0 3.45 1 0 0 0</pose>
+      <link name="wall"><collision name="collision"><geometry><box><size>12 0.1 2</size></box></geometry></collision><visual name="visual"><geometry><box><size>12 0.1 2</size></box></geometry><material><ambient>0.25 0.31 0.38 1</ambient><diffuse>0.25 0.31 0.38 1</diffuse></material></visual></link>
+    </model>
+    <model name="south_wall">
+      <static>true</static><pose>0 -3.45 1 0 0 0</pose>
+      <link name="wall"><collision name="collision"><geometry><box><size>12 0.1 2</size></box></geometry></collision><visual name="visual"><geometry><box><size>12 0.1 2</size></box></geometry><material><ambient>0.25 0.31 0.38 1</ambient><diffuse>0.25 0.31 0.38 1</diffuse></material></visual></link>
+    </model>
+    <model name="west_wall">
+      <static>true</static><pose>-5.95 0 1 0 0 0</pose>
+      <link name="wall"><collision name="collision"><geometry><box><size>0.1 7 2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.1 7 2</size></box></geometry><material><ambient>0.25 0.31 0.38 1</ambient><diffuse>0.25 0.31 0.38 1</diffuse></material></visual></link>
+    </model>
+    <model name="east_wall">
+      <static>true</static><pose>5.95 0 1 0 0 0</pose>
+      <link name="wall"><collision name="collision"><geometry><box><size>0.1 7 2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.1 7 2</size></box></geometry><material><ambient>0.25 0.31 0.38 1</ambient><diffuse>0.25 0.31 0.38 1</diffuse></material></visual></link>
+    </model>
+
+    <!-- The robot stops west of this line when private-space access is refused. -->
+    <model name="privacy_boundary">
+      <static>true</static><pose>-1.65 0 0.065 0 0 0</pose>
+      <link name="boundary_link">
+        <visual name="boundary_visual">
+          <geometry><box><size>0.08 5.8 0.025</size></box></geometry>
+          <material><ambient>0.85 0.05 0.05 1</ambient><diffuse>0.85 0.05 0.05 1</diffuse><emissive>0.3 0 0 1</emissive></material>
+        </visual>
+      </link>
+    </model>
+    <model name="restricted_private_area">
+      <static>true</static><pose>2.125 0 0.061 0 0 0</pose>
+      <link name="area_link"><visual name="area_visual"><geometry><box><size>7.55 5.8 0.012</size></box></geometry><material><ambient>0.30 0.08 0.08 1</ambient><diffuse>0.30 0.08 0.08 1</diffuse></material></visual></link>
+    </model>
+
+    <!-- Seven coloured pads make the deterministic study stages visible. -->
+    <model name="stage_1_person_recognition"><static>true</static><pose>-3.6 2.7 0.08 0 0 0</pose><link name="pad"><visual name="visual"><geometry><box><size>0.25 0.45 0.04</size></box></geometry><material><ambient>0.12 0.55 0.95 1</ambient><diffuse>0.12 0.55 0.95 1</diffuse></material></visual></link></model>
+    <model name="stage_2_speech_input"><static>true</static><pose>-3.2 2.7 0.08 0 0 0</pose><link name="pad"><visual name="visual"><geometry><box><size>0.25 0.45 0.04</size></box></geometry><material><ambient>0.14 0.68 0.75 1</ambient><diffuse>0.14 0.68 0.75 1</diffuse></material></visual></link></model>
+    <model name="stage_3_interaction_memory"><static>true</static><pose>-2.8 2.7 0.08 0 0 0</pose><link name="pad"><visual name="visual"><geometry><box><size>0.25 0.45 0.04</size></box></geometry><material><ambient>0.20 0.74 0.50 1</ambient><diffuse>0.20 0.74 0.50 1</diffuse></material></visual></link></model>
+    <model name="stage_4_body_pose_tracking"><static>true</static><pose>-2.4 2.7 0.08 0 0 0</pose><link name="pad"><visual name="visual"><geometry><box><size>0.25 0.45 0.04</size></box></geometry><material><ambient>0.72 0.72 0.15 1</ambient><diffuse>0.72 0.72 0.15 1</diffuse></material></visual></link></model>
+    <model name="stage_5_route_guidance"><static>true</static><pose>-2.0 2.7 0.08 0 0 0</pose><link name="pad"><visual name="visual"><geometry><box><size>0.25 0.45 0.04</size></box></geometry><material><ambient>0.95 0.52 0.08 1</ambient><diffuse>0.95 0.52 0.08 1</diffuse></material></visual></link></model>
+    <model name="stage_6_proximity_or_private_space_access"><static>true</static><pose>-1.6 2.7 0.08 0 0 0</pose><link name="pad"><visual name="visual"><geometry><box><size>0.25 0.45 0.04</size></box></geometry><material><ambient>0.92 0.18 0.12 1</ambient><diffuse>0.92 0.18 0.12 1</diffuse></material></visual></link></model>
+    <model name="stage_7_remote_assistance_stream"><static>true</static><pose>-1.2 2.7 0.08 0 0 0</pose><link name="pad"><visual name="visual"><geometry><box><size>0.25 0.45 0.04</size></box></geometry><material><ambient>0.65 0.23 0.78 1</ambient><diffuse>0.65 0.23 0.78 1</diffuse></material></visual></link></model>
+
+    <model name="consent_robot">
+      <pose>-4.0 0 0.23 0 0 0</pose>
+      <link name="base_link">
+        <inertial><mass>6.0</mass><inertia><ixx>0.18</ixx><iyy>0.28</iyy><izz>0.35</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia></inertial>
+        <collision name="base_collision"><geometry><box><size>0.55 0.42 0.22</size></box></geometry></collision>
+        <visual name="base_visual"><geometry><box><size>0.55 0.42 0.22</size></box></geometry><material><ambient>0.05 0.35 0.78 1</ambient><diffuse>0.05 0.35 0.78 1</diffuse></material></visual>
+        <visual name="consent_indicator"><pose>0 0 0.20 0 0 0</pose><geometry><sphere><radius>0.09</radius></sphere></geometry><material><ambient>0.10 0.90 0.55 1</ambient><diffuse>0.10 0.90 0.55 1</diffuse><emissive>0.03 0.25 0.10 1</emissive></material></visual>
+      </link>
+      <link name="left_wheel">
+        <pose relative_to="base_link">0 0.24 -0.08 1.5708 0 0</pose>
+        <inertial><mass>0.3</mass><inertia><ixx>0.001</ixx><iyy>0.001</iyy><izz>0.001</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia></inertial>
+        <collision name="collision"><geometry><cylinder><radius>0.1</radius><length>0.06</length></cylinder></geometry></collision>
+        <visual name="visual"><geometry><cylinder><radius>0.1</radius><length>0.06</length></cylinder></geometry><material><ambient>0.03 0.03 0.03 1</ambient><diffuse>0.03 0.03 0.03 1</diffuse></material></visual>
+      </link>
+      <link name="right_wheel">
+        <pose relative_to="base_link">0 -0.24 -0.08 1.5708 0 0</pose>
+        <inertial><mass>0.3</mass><inertia><ixx>0.001</ixx><iyy>0.001</iyy><izz>0.001</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia></inertial>
+        <collision name="collision"><geometry><cylinder><radius>0.1</radius><length>0.06</length></cylinder></geometry></collision>
+        <visual name="visual"><geometry><cylinder><radius>0.1</radius><length>0.06</length></cylinder></geometry><material><ambient>0.03 0.03 0.03 1</ambient><diffuse>0.03 0.03 0.03 1</diffuse></material></visual>
+      </link>
+      <joint name="left_wheel_joint" type="revolute"><parent>base_link</parent><child>left_wheel</child><axis><xyz expressed_in="__model__">0 1 0</xyz></axis></joint>
+      <joint name="right_wheel_joint" type="revolute"><parent>base_link</parent><child>right_wheel</child><axis><xyz expressed_in="__model__">0 1 0</xyz></axis></joint>
+      <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+        <left_joint>left_wheel_joint</left_joint>
+        <right_joint>right_wheel_joint</right_joint>
+        <wheel_separation>0.48</wheel_separation>
+        <wheel_radius>0.10</wheel_radius>
+        <topic>/model/consent_robot/cmd_vel</topic>
+        <odom_topic>/model/consent_robot/odometry</odom_topic>
+      </plugin>
+    </model>
+  </world>
+</sdf>
