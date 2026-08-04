@@ -27,7 +27,8 @@ class StudyDashboardNode(Node):
         self.create_subscription(
             String, '/scenario/status', self._on_scenario_status, 10)
         self.create_subscription(
-            String, '/study/control_status', self._on_control_status, 10)
+            String, '/study/control_status', self._on_control_status,
+            STATUS_QOS)
         self.get_logger().info(
             'study dashboard ready; fixed status text contains no raw data')
 

@@ -95,7 +95,9 @@ The service acknowledges that the asynchronous reset was accepted. Confirm
 completion with:
 
 ```bash
-ros2 topic echo /study/control_status
+ros2 topic echo /study/control_status \
+  --qos-durability transient_local \
+  --qos-reliability reliable
 ```
 
 Do not begin the next participant trial until `reset_complete` appears.
