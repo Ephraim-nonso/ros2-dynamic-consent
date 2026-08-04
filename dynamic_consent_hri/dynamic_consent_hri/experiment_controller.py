@@ -10,7 +10,7 @@ from std_srvs.srv import Trigger
 from dynamic_consent_interfaces.srv import ResetSession
 from ros_gz_interfaces.srv import ControlWorld
 
-from .ros_qos import SESSION_QOS
+from .ros_qos import SESSION_QOS, STATUS_QOS
 
 
 class ExperimentControllerNode(Node):
@@ -20,7 +20,7 @@ class ExperimentControllerNode(Node):
         self._session_id = ''
         self._reset_in_progress = False
         self._status_publisher = self.create_publisher(
-            String, '/study/control_status', 10)
+            String, '/study/control_status', STATUS_QOS)
         self.create_subscription(
             String, '/consent/session', self._on_session, SESSION_QOS)
         self._world_client = self.create_client(

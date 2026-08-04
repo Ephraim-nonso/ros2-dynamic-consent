@@ -140,7 +140,9 @@ sourced terminal:
 
 ```bash
 ros2 service call /study/reset std_srvs/srv/Trigger "{}"
-ros2 topic echo /study/control_status
+ros2 topic echo /study/control_status \
+  --qos-durability transient_local \
+  --qos-reliability reliable
 ```
 
 Wait for `reset_complete`. The robot returns to reception and a new anonymous
