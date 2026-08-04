@@ -35,6 +35,27 @@ def test_world_contains_every_privacy_scenario_marker():
     assert expected <= model_names
 
 
+def test_world_makes_the_assistance_task_and_private_room_visible():
+    model_names = {model.attrib['name'] for model in _world().findall('model')}
+    assert {
+        'visitor_requesting_assistance',
+        'reception_start_point',
+        'private_room_entrance',
+        'assistance_destination',
+        'authorised_staff_assistance_station',
+        'status_indicator_legend',
+    } <= model_names
+
+
+def test_world_has_an_observer_camera_and_study_controls():
+    world = _world()
+    scene = world.find("gui/plugin[@filename='MinimalScene']")
+    assert scene is not None
+    assert scene.findtext('camera_pose')
+    assert world.find("gui/plugin[@filename='WorldControl']") is not None
+    assert world.find("gui/plugin[@filename='EntityTree']") is not None
+
+
 def test_robot_uses_diff_drive_and_the_bridged_velocity_topic():
     robot = _world().find("model[@name='consent_robot']")
     assert robot is not None
@@ -63,6 +84,8 @@ def test_gazebo_launches_and_assets_are_installed():
     setup_text = (PACKAGE_DIR / 'setup.py').read_text(encoding='utf-8')
     assert "glob('worlds/*.sdf')" in setup_text
     assert 'gazebo_motion_adapter =' in setup_text
+    assert 'study_dashboard =' in setup_text
+    assert 'experiment_controller =' in setup_text
 
 
 def test_manifest_declares_ros_gz_runtime_dependencies():
@@ -71,4 +94,19 @@ def test_manifest_declares_ros_gz_runtime_dependencies():
         element.text for element in root
         if element.tag in {'depend', 'exec_depend'}
     }
-    assert {'geometry_msgs', 'ros_gz_bridge', 'ros_gz_sim'} <= dependencies
+    assert {
+        'geometry_msgs',
+        'std_srvs',
+        'ros_gz_bridge',
+        'ros_gz_interfaces',
+        'ros_gz_sim',
+    } <= dependencies
+
+
+def test_launch_includes_dashboard_and_coordinated_world_reset():
+    source = (PACKAGE_DIR / 'dynamic_consent_hri'
+              / 'gazebo_demo_launch.py').read_text(encoding='utf-8')
+    assert 'study_dashboard' in source
+    assert 'experiment_controller' in source
+    assert '/world/dynamic_consent_world/control' in source
+    assert 'ros_gz_interfaces/srv/ControlWorld' in source

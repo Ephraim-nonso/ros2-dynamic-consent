@@ -102,3 +102,7 @@ ros2 topic echo /gazebo_demo/status
 The motion mapping has ROS-free unit tests. Full physics, bridge, GUI, and
 terminal interaction must be validated on the Ubuntu VM because the macOS
 development host does not contain ROS 2 Jazzy or Gazebo Harmonic.
+
+Phase 7 extends this foundation with a visible visitor-assistance environment,
+stage-specific actions, a participant-facing dashboard, and coordinated reset.
+See `docs/phase7_embodied_interaction.md`.

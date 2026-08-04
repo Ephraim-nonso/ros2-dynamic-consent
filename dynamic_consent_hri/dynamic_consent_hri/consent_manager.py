@@ -90,9 +90,7 @@ class ConsentManagerNode(Node):
         self.create_service(
             ResetSession, '/consent/reset_session', self._on_reset)
 
-        session_msg = String()
-        session_msg.data = self._session_id
-        self._session_pub.publish(session_msg)
+        self._publish_active_session()
         self._publish_event('session_started')
         if self._condition == 'static' and self._store is not None:
             self._begin_static_consent()
@@ -235,11 +233,28 @@ class ConsentManagerNode(Node):
             response.cleared_count = 0
             response.message = 'policy invalid; nothing to reset'
             return response
-        cleared = self._store.reset_session(request.session_id)
+        if request.session_id != self._session_id:
+            response.success = False
+            response.cleared_count = 0
+            response.message = 'reset rejected for non-active session'
+            return response
+
+        cleared = self._store.reset_session(self._session_id)
+        self._publish_event('session_reset')
+        self._session_id = generate_session_id()
+        self._static_request_id = None
+        self._static_requests.clear()
+        self._static_decided = False
+        self._publish_active_session()
+        self._publish_event('session_started')
+        if self._condition == 'static':
+            self._begin_static_consent()
+
         response.success = True
         response.cleared_count = cleared
-        response.message = f'cleared {cleared} consent records'
-        self._publish_event('session_reset')
+        response.message = (
+            f'cleared {cleared} consent records and started '
+            f'{self._session_id}')
         return response
 
     # -- helpers ----------------------------------------------------------
@@ -247,6 +262,11 @@ class ConsentManagerNode(Node):
     def _on_expire(self, record: ConsentRecord) -> None:
         self._publish_event('consent_expired',
                             capability_id=record.capability_id)
+
+    def _publish_active_session(self) -> None:
+        msg = String()
+        msg.data = self._session_id
+        self._session_pub.publish(msg)
 
     def _begin_static_consent(self) -> None:
         disclosure = self.get_parameter('static_disclosure').value

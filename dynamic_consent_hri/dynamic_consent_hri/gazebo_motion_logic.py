@@ -1,4 +1,4 @@
-"""Pure parsing and motion plans for the Phase 6 Gazebo demonstration."""
+"""Pure parsing and embodied action plans for the Gazebo demonstration."""
 
 from __future__ import annotations
 
@@ -36,6 +36,16 @@ class MotionPlan:
 
 
 _STAGES_BY_NUMBER = {stage.number: stage for stage in SCENARIO_STAGES}
+
+_ALLOWED_LABELS = {
+    1: 'recognition_scan_then_approach',
+    2: 'listen_then_approach',
+    3: 'memory_confirmation_then_approach',
+    4: 'body_pose_orientation_then_approach',
+    5: 'route_guidance_forward',
+    6: 'private_boundary_crossing',
+    7: 'remote_staff_connection_signal',
+}
 
 
 def parse_scenario_status(value: object) -> ScenarioSignal | None:
@@ -100,9 +110,17 @@ def motion_plan_for_signal(
     }:
         return MotionPlan('stop', (stop,))
     if signal.kind is ScenarioSignalKind.CAPABILITY_EXECUTED:
+        if signal.stage is None:
+            raise ValueError('capability outcome requires a scenario stage')
+        gestures = _allowed_gesture(
+            signal.stage.number, turn_speed, turn_duration)
+        forward = MotionSegment(
+            forward_speed, 0.0, forward_duration)
+        segments = ((forward,) + gestures if signal.stage.number == 7
+                    else gestures + (forward,))
         return MotionPlan(
-            'allowed_forward',
-            (MotionSegment(forward_speed, 0.0, forward_duration),),
+            _ALLOWED_LABELS[signal.stage.number],
+            segments,
         )
     if signal.kind is ScenarioSignalKind.FALLBACK_EXECUTED:
         return MotionPlan(
@@ -113,6 +131,33 @@ def motion_plan_for_signal(
             ),
         )
     raise ValueError(f'unhandled scenario signal: {signal.kind!r}')
+
+
+def _allowed_gesture(stage_number: int, turn_speed: float,
+                     turn_duration: float) -> tuple[MotionSegment, ...]:
+    """Return a zero-displacement gesture unique to a study stage."""
+    stop = MotionSegment(0.0, 0.0, turn_duration)
+    left = MotionSegment(0.0, turn_speed, turn_duration)
+    right = MotionSegment(0.0, -turn_speed, turn_duration)
+    if stage_number == 1:
+        return (left, right)
+    if stage_number == 2:
+        return (stop,)
+    if stage_number == 3:
+        return (
+            MotionSegment(0.0, turn_speed * 0.5, turn_duration * 0.5),
+            MotionSegment(0.0, -turn_speed * 0.5, turn_duration * 0.5),
+        )
+    if stage_number == 4:
+        return (
+            MotionSegment(0.0, turn_speed * 0.75, turn_duration),
+            MotionSegment(0.0, -turn_speed * 0.75, turn_duration),
+        )
+    if stage_number in {5, 6}:
+        return ()
+    if stage_number == 7:
+        return (left, right)
+    raise ValueError(f'unknown scenario stage: {stage_number}')
 
 
 def _positive_number(value: object, label: str) -> float:

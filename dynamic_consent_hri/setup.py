@@ -24,7 +24,8 @@ setup(
     zip_safe=True,
     maintainer='Chukwu Chinonso Ephraim',
     maintainer_email='chukwuchinonsoephraim@gmail.com',
-    description='Dynamic consent management for privacy-sensitive HRI capabilities.',
+    description=(
+        'Dynamic consent management for privacy-sensitive HRI capabilities.'),
     license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={
@@ -34,7 +35,11 @@ setup(
             'consent_ui = dynamic_consent_hri.consent_ui:main',
             'consent_logger = dynamic_consent_hri.consent_logger:main',
             'scenario_simulator = dynamic_consent_hri.scenario_simulator:main',
-            'gazebo_motion_adapter = dynamic_consent_hri.gazebo_motion_adapter:main',
+            'gazebo_motion_adapter = '
+            'dynamic_consent_hri.gazebo_motion_adapter:main',
+            'study_dashboard = dynamic_consent_hri.study_dashboard:main',
+            'experiment_controller = '
+            'dynamic_consent_hri.experiment_controller:main',
         ],
     },
 )

@@ -52,14 +52,34 @@ def test_malformed_or_noncanonical_status_is_rejected(value):
     assert parse_scenario_status(value) is None
 
 
-def test_allowed_outcome_moves_forward_for_a_bounded_duration():
+@pytest.mark.parametrize('stage', SCENARIO_STAGES)
+def test_allowed_outcomes_have_distinct_bounded_embodied_actions(stage):
     plan = motion_plan_for_signal(ScenarioSignal(
-        ScenarioSignalKind.CAPABILITY_EXECUTED, SCENARIO_STAGES[0]))
-    assert plan.label == 'allowed_forward'
-    assert len(plan.segments) == 1
-    assert plan.segments[0].linear_x > 0
-    assert plan.segments[0].angular_z == 0
-    assert plan.segments[0].duration_seconds > 0
+        ScenarioSignalKind.CAPABILITY_EXECUTED, stage))
+    forward = [segment for segment in plan.segments
+               if segment.linear_x > 0]
+    assert len(forward) == 1
+    assert forward[0].angular_z == 0
+    assert forward[0].duration_seconds > 0
+    assert all(segment.linear_x >= 0 for segment in plan.segments)
+    assert all(segment.duration_seconds > 0 for segment in plan.segments)
+    net_rotation = sum(
+        segment.angular_z * segment.duration_seconds
+        for segment in plan.segments
+    )
+    assert net_rotation == pytest.approx(0.0)
+    assert sum(segment.duration_seconds for segment in plan.segments) < 1.8
+
+
+def test_allowed_stage_labels_are_unique_and_purpose_specific():
+    labels = {
+        motion_plan_for_signal(ScenarioSignal(
+            ScenarioSignalKind.CAPABILITY_EXECUTED, stage)).label
+        for stage in SCENARIO_STAGES
+    }
+    assert len(labels) == len(SCENARIO_STAGES)
+    assert 'private_boundary_crossing' in labels
+    assert 'remote_staff_connection_signal' in labels
 
 
 def test_fallback_acknowledges_without_crossing_the_boundary():

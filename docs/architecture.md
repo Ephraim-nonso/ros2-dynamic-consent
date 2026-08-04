@@ -54,12 +54,16 @@ consent, wrong session — resolves to **deny** (fail closed).
 | Scenario simulator | `scenario_simulator` | Drive the deterministic seven-stage privacy-dimension scenario |
 | Gazebo motion adapter | `gazebo_motion_adapter` | Convert validated scenario outcomes into bounded visual motion; never decide consent |
 | Gazebo bridge | `parameter_bridge` | Carry ROS `Twist` commands to the Harmonic `DiffDrive` system |
+| Study dashboard | `study_dashboard` | Render fixed participant-facing stage, outcome, and fallback status |
+| Experiment controller | `experiment_controller` | Coordinate Gazebo reset and fresh anonymous consent sessions |
 
 The manager, gate and terminal UI were implemented in Phase 3. Phase 4 adds
 the deterministic scenario simulator, purpose-centred policy, and condition
 launch files. Phase 5 adds the strict anonymous event logger to both study
 conditions. Phase 6 adds a shared Gazebo world and outcome visualisation while
-leaving all consent decisions in the existing manager and gate.
+leaving all consent decisions in the existing manager and gate. Phase 7 adds
+the embodied assistance environment, stage-specific actions, study dashboard,
+and repeatable experiment reset.
 
 The policy loader and consent state machine are plain Python modules with no
 `rclpy` dependency; nodes wrap them. This keeps the security-critical logic
@@ -81,7 +85,7 @@ unit-testable without a ROS installation.
 |---|---|
 | `CheckConsent` | Gate → Manager: is consent valid for (session, capability)? |
 | `RevokeConsent` | UI/CLI → Manager: withdraw a previously granted permission |
-| `ResetSession` | Experimenter → Manager: clear all consent at end of session |
+| `ResetSession` | Controller → Manager: clear the active session and rotate to a fresh anonymous session |
 
 ### Topics
 
@@ -98,6 +102,15 @@ unit-testable without a ROS installation.
 | `/scenario/status` | `std_msgs/String` | simulator → observer |
 | `/gazebo_demo/status` | `std_msgs/String` | motion adapter → observer |
 | `/model/consent_robot/cmd_vel` | `geometry_msgs/Twist` | motion adapter → Gazebo bridge |
+| `/study/status` | `std_msgs/String` | study dashboard → participant/observer |
+| `/study/control_status` | `std_msgs/String` | experiment controller → dashboard/experimenter |
+
+### Experiment services
+
+| Service | Type | Purpose |
+|---|---|---|
+| `/study/reset` | `std_srvs/Trigger` | Reset Gazebo, rotate the anonymous session, and restart the same condition |
+| `/world/dynamic_consent_world/control` | `ros_gz_interfaces/ControlWorld` | Bridged Gazebo world reset used by the experiment controller |
 
 ## Parameters
 
@@ -213,3 +226,21 @@ policy fallback and keeps the robot immediately outside.
 The world is self-contained and uses Gazebo Harmonic's `DiffDrive` system.
 GUI launches default to the Ogre 1 render engine for the UTM graphics context;
 server-only mode is available without changing the consent experiment.
+
+## Phase 7 embodied-study boundary
+
+The Phase 7 world makes the intended building-assistance task visible through
+a visitor, reception point, private-room entrance, destination, and authorised
+staff station. Its observer camera and Entity Tree start with a study-oriented
+view, while all models remain local repository assets.
+
+The dashboard accepts only statuses that match the frozen scenario parser and
+uses fixed display copy. It cannot contain participant-entered text. Granted
+outcomes add a purpose-specific, zero-net-rotation gesture and the same bounded
+forward movement; every refusal uses a zero-linear-velocity fallback.
+
+The public `/study/reset` service first asks Gazebo to reset all models through
+the supported world-control bridge. Only after Gazebo confirms success does it
+ask the manager to clear the active consent state and publish a newly generated
+anonymous session. That publication resets the logger, gate, and scenario. A
+reset request for a stale session is rejected.
