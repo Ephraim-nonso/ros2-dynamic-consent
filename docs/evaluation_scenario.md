@@ -148,3 +148,21 @@ ros2 topic echo /study/control_status \
 Wait for `reset_complete`. The robot returns to reception and a new anonymous
 session log is created; static consent is requested again in the static
 condition, while dynamic prompts resume at their corresponding stages.
+
+## Phase 8 reproducibility checks
+
+Before collecting participant data, run the Phase 8 suite from a clean,
+sourced workspace with no manually running Gazebo process:
+
+```bash
+colcon test --packages-select dynamic_consent_hri \
+  --event-handlers console_direct+
+colcon test-result --verbose
+```
+
+The headless test repeats the dynamic seven-stage path without real sensor
+collection, measures simulated robot progress, and verifies coordinated reset.
+The live static test separately proves that one decision applies to every
+declared capability and that a new anonymous session requires a new decision.
+Archive the test result with the study software version used for data
+collection.
