@@ -103,3 +103,21 @@ column -s, -t < ~/.ros/dynamic_consent/logs/session_XXXXXXXX.csv
 
 Session logs are research data and remain outside the Git repository. Do not
 commit or copy them into `dynamic_consent_hri/logs`.
+
+## Phase 6 Gazebo visualisation
+
+The Gazebo launch variants run this same deterministic scenario in the same
+self-contained building world:
+
+```bash
+ros2 launch dynamic_consent_hri gazebo_static_demo.launch.py
+ros2 launch dynamic_consent_hri gazebo_dynamic_demo.launch.py
+```
+
+Only a scenario outcome produced after the gate responds causes visible motion.
+An authorised stage advances the robot 0.4 m; a blocked stage performs a
+stationary left/right acknowledgement. If Stages 1–5 were granted, the red
+private-space line makes Stage 6 concrete: approval crosses the line, while
+refusal leaves the robot outside and presents the declared fallback. See
+`docs/phase6_gazebo_demo.md` for setup, UTM rendering, headless testing, and
+safety constraints.

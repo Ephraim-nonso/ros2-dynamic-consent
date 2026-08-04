@@ -17,6 +17,8 @@ setup(
          glob('config/*.yaml')),
         (os.path.join('share', package_name, 'launch'),
          glob('launch/*.launch.py')),
+        (os.path.join('share', package_name, 'worlds'),
+         glob('worlds/*.sdf')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -32,6 +34,7 @@ setup(
             'consent_ui = dynamic_consent_hri.consent_ui:main',
             'consent_logger = dynamic_consent_hri.consent_logger:main',
             'scenario_simulator = dynamic_consent_hri.scenario_simulator:main',
+            'gazebo_motion_adapter = dynamic_consent_hri.gazebo_motion_adapter:main',
         ],
     },
 )

@@ -1,0 +1,7 @@
+gazebo_motion_adapter:
+  ros__parameters:
+    cmd_vel_topic: "/model/consent_robot/cmd_vel"
+    forward_speed: 0.5
+    forward_duration_seconds: 0.8
+    turn_speed: 0.8
+    turn_duration_seconds: 0.3
