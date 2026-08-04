@@ -10,6 +10,7 @@
   <depend>rclpy</depend>
   <depend>ament_index_python</depend>
   <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
   <depend>geometry_msgs</depend>
   <depend>builtin_interfaces</depend>
   <depend>dynamic_consent_interfaces</depend>
@@ -19,6 +20,7 @@
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>ros2launch</exec_depend>
   <exec_depend>ros_gz_bridge</exec_depend>
+  <exec_depend>ros_gz_interfaces</exec_depend>
   <exec_depend>ros_gz_sim</exec_depend>
 
   <test_depend>python3-pytest</test_depend>

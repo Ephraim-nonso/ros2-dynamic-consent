@@ -5,6 +5,40 @@
     <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
     <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
 
+    <gui fullscreen="0">
+      <plugin filename="MinimalScene" name="Assistance study view">
+        <gz-gui>
+          <title>Assistance study view</title>
+          <property type="bool" key="showTitleBar">false</property>
+          <property type="string" key="state">docked</property>
+        </gz-gui>
+        <scene>scene</scene>
+        <ambient_light>0.7 0.7 0.7</ambient_light>
+        <background_color>0.12 0.15 0.20</background_color>
+        <camera_pose>-6.5 -6.5 6.5 0 0.55 0.78</camera_pose>
+        <camera_clip><near>0.1</near><far>100</far></camera_clip>
+      </plugin>
+      <plugin filename="GzSceneManager" name="Scene Manager"/>
+      <plugin filename="WorldControl" name="World control">
+        <gz-gui>
+          <property type="bool" key="showTitleBar">false</property>
+          <property type="bool" key="resizable">false</property>
+          <property type="double" key="height">72</property>
+          <property type="double" key="width">121</property>
+          <property type="string" key="state">floating</property>
+          <anchors target="Assistance study view">
+            <line own="left" target="left"/>
+            <line own="bottom" target="bottom"/>
+          </anchors>
+        </gz-gui>
+        <play_pause>true</play_pause><step>true</step>
+        <start_paused>false</start_paused>
+        <service>/world/dynamic_consent_world/control</service>
+        <stats_topic>/world/dynamic_consent_world/stats</stats_topic>
+      </plugin>
+      <plugin filename="EntityTree" name="Study entities"/>
+    </gui>
+
     <gravity>0 0 -9.8</gravity>
     <scene>
       <ambient>0.7 0.7 0.7 1</ambient>
@@ -61,6 +95,67 @@
     <model name="restricted_private_area">
       <static>true</static><pose>2.125 0 0.061 0 0 0</pose>
       <link name="area_link"><visual name="area_visual"><geometry><box><size>7.55 5.8 0.012</size></box></geometry><material><ambient>0.30 0.08 0.08 1</ambient><diffuse>0.30 0.08 0.08 1</diffuse></material></visual></link>
+    </model>
+
+    <!-- A stylised visitor makes the assistance relationship explicit. -->
+    <model name="visitor_requesting_assistance">
+      <static>true</static><pose>-4.15 1.05 0.05 0 0 0</pose>
+      <link name="visitor">
+        <visual name="left_leg"><pose>0 0.10 0.23 0 0 0</pose><geometry><box><size>0.12 0.12 0.46</size></box></geometry><material><ambient>0.12 0.16 0.28 1</ambient><diffuse>0.12 0.16 0.28 1</diffuse></material></visual>
+        <visual name="right_leg"><pose>0 -0.10 0.23 0 0 0</pose><geometry><box><size>0.12 0.12 0.46</size></box></geometry><material><ambient>0.12 0.16 0.28 1</ambient><diffuse>0.12 0.16 0.28 1</diffuse></material></visual>
+        <visual name="torso"><pose>0 0 0.90 0 0 0</pose><geometry><cylinder><radius>0.22</radius><length>0.90</length></cylinder></geometry><material><ambient>0.12 0.55 0.82 1</ambient><diffuse>0.12 0.55 0.82 1</diffuse></material></visual>
+        <visual name="head"><pose>0 0 1.52 0 0 0</pose><geometry><sphere><radius>0.20</radius></sphere></geometry><material><ambient>0.64 0.42 0.30 1</ambient><diffuse>0.64 0.42 0.30 1</diffuse></material></visual>
+        <visual name="pointing_arm"><pose>0.28 -0.28 1.12 0 0 -0.55</pose><geometry><box><size>0.70 0.10 0.10</size></box></geometry><material><ambient>0.64 0.42 0.30 1</ambient><diffuse>0.64 0.42 0.30 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="reception_start_point">
+      <static>true</static><pose>-4.85 -1.45 0.05 0 0 0</pose>
+      <link name="desk">
+        <collision name="collision"><pose>0 0 0.45 0 0 0</pose><geometry><box><size>1.0 0.55 0.9</size></box></geometry></collision>
+        <visual name="desk_visual"><pose>0 0 0.45 0 0 0</pose><geometry><box><size>1.0 0.55 0.9</size></box></geometry><material><ambient>0.18 0.32 0.48 1</ambient><diffuse>0.18 0.32 0.48 1</diffuse></material></visual>
+        <visual name="reception_beacon"><pose>0 0 1.05 0 0 0</pose><geometry><sphere><radius>0.16</radius></sphere></geometry><material><ambient>0.12 0.55 0.95 1</ambient><diffuse>0.12 0.55 0.95 1</diffuse><emissive>0.05 0.2 0.35 1</emissive></material></visual>
+      </link>
+    </model>
+
+    <!-- The red region is now a room with a wide doorway at the boundary. -->
+    <model name="private_room_entrance">
+      <static>true</static><pose>-1.65 0 0.05 0 0 0</pose>
+      <link name="doorway">
+        <collision name="north_partition_collision"><pose>0 2.05 0.9 0 0 0</pose><geometry><box><size>0.14 2.5 1.8</size></box></geometry></collision>
+        <collision name="south_partition_collision"><pose>0 -2.05 0.9 0 0 0</pose><geometry><box><size>0.14 2.5 1.8</size></box></geometry></collision>
+        <visual name="north_partition"><pose>0 2.05 0.9 0 0 0</pose><geometry><box><size>0.14 2.5 1.8</size></box></geometry><material><ambient>0.45 0.18 0.18 1</ambient><diffuse>0.45 0.18 0.18 1</diffuse></material></visual>
+        <visual name="south_partition"><pose>0 -2.05 0.9 0 0 0</pose><geometry><box><size>0.14 2.5 1.8</size></box></geometry><material><ambient>0.45 0.18 0.18 1</ambient><diffuse>0.45 0.18 0.18 1</diffuse></material></visual>
+        <visual name="door_lintel"><pose>0 0 1.7 0 0 0</pose><geometry><box><size>0.18 1.6 0.22</size></box></geometry><material><ambient>0.88 0.16 0.10 1</ambient><diffuse>0.88 0.16 0.10 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="assistance_destination">
+      <static>true</static><pose>-0.70 0 0.05 0 0 0</pose>
+      <link name="destination_arch">
+        <visual name="left_post"><pose>0 0.75 0.8 0 0 0</pose><geometry><box><size>0.18 0.18 1.6</size></box></geometry><material><ambient>0.10 0.72 0.32 1</ambient><diffuse>0.10 0.72 0.32 1</diffuse></material></visual>
+        <visual name="right_post"><pose>0 -0.75 0.8 0 0 0</pose><geometry><box><size>0.18 0.18 1.6</size></box></geometry><material><ambient>0.10 0.72 0.32 1</ambient><diffuse>0.10 0.72 0.32 1</diffuse></material></visual>
+        <visual name="top"><pose>0 0 1.55 0 0 0</pose><geometry><box><size>0.18 1.68 0.18</size></box></geometry><material><ambient>0.10 0.72 0.32 1</ambient><diffuse>0.10 0.72 0.32 1</diffuse><emissive>0.03 0.22 0.08 1</emissive></material></visual>
+      </link>
+    </model>
+
+    <model name="authorised_staff_assistance_station">
+      <static>true</static><pose>-0.55 2.45 0.05 0 0 0</pose>
+      <link name="station">
+        <visual name="stand"><pose>0 0 0.55 0 0 0</pose><geometry><box><size>0.55 0.35 1.1</size></box></geometry><material><ambient>0.28 0.18 0.45 1</ambient><diffuse>0.28 0.18 0.45 1</diffuse></material></visual>
+        <visual name="screen"><pose>-0.02 -0.19 1.05 1.5708 0 0</pose><geometry><box><size>0.45 0.04 0.34</size></box></geometry><material><ambient>0.65 0.23 0.78 1</ambient><diffuse>0.65 0.23 0.78 1</diffuse><emissive>0.20 0.06 0.28 1</emissive></material></visual>
+      </link>
+    </model>
+
+    <!-- A fixed colour key matches the terminal study dashboard. -->
+    <model name="status_indicator_legend">
+      <static>true</static><pose>-4.7 -2.55 0.05 0 0 0</pose>
+      <link name="legend">
+        <visual name="ready_blue"><pose>0 0 0.18 0 0 0</pose><geometry><box><size>0.22 0.22 0.36</size></box></geometry><material><ambient>0.12 0.55 0.95 1</ambient><diffuse>0.12 0.55 0.95 1</diffuse></material></visual>
+        <visual name="waiting_yellow"><pose>0.30 0 0.18 0 0 0</pose><geometry><box><size>0.22 0.22 0.36</size></box></geometry><material><ambient>0.92 0.78 0.12 1</ambient><diffuse>0.92 0.78 0.12 1</diffuse></material></visual>
+        <visual name="granted_green"><pose>0.60 0 0.18 0 0 0</pose><geometry><box><size>0.22 0.22 0.36</size></box></geometry><material><ambient>0.10 0.72 0.32 1</ambient><diffuse>0.10 0.72 0.32 1</diffuse></material></visual>
+        <visual name="fallback_orange"><pose>0.90 0 0.18 0 0 0</pose><geometry><box><size>0.22 0.22 0.36</size></box></geometry><material><ambient>0.95 0.45 0.08 1</ambient><diffuse>0.95 0.45 0.08 1</diffuse></material></visual>
+      </link>
     </model>
 
     <!-- Seven coloured pads make the deterministic study stages visible. -->

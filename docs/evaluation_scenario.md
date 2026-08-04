@@ -121,3 +121,28 @@ private-space line makes Stage 6 concrete: approval crosses the line, while
 refusal leaves the robot outside and presents the declared fallback. See
 `docs/phase6_gazebo_demo.md` for setup, UTM rendering, headless testing, and
 safety constraints.
+
+## Phase 7 study-ready environment
+
+The Phase 7 launch presents the task as indoor visitor assistance rather than
+an abstract corridor. Reception, a visitor, a private-room doorway, the final
+destination, and the authorised staff station remain identical between the
+static and dynamic conditions. The terminal dashboard explains each requested,
+granted, and fallback state using fixed text.
+
+Each granted stage performs a distinct bounded gesture before or after the
+same nominal forward movement. Refusal remains stationary and therefore cannot
+cross the private-space line. This additional feedback does not change policy,
+consent timing, capability order, fallback selection, or anonymous logging.
+
+Between participant trials, reset the complete experiment from a second
+sourced terminal:
+
+```bash
+ros2 service call /study/reset std_srvs/srv/Trigger "{}"
+ros2 topic echo /study/control_status
+```
+
+Wait for `reset_complete`. The robot returns to reception and a new anonymous
+session log is created; static consent is requested again in the static
+condition, while dynamic prompts resume at their corresponding stages.

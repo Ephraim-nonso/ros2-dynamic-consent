@@ -47,7 +47,7 @@ def generate_gazebo_demo_launch_description(
     )
 
     nodes = generate_demo_nodes(
-        condition_file, {'stage_delay_seconds': 1.2})
+        condition_file, {'stage_delay_seconds': 1.8})
     nodes.extend([
         Node(
             package='ros_gz_bridge',
@@ -56,6 +56,8 @@ def generate_gazebo_demo_launch_description(
             arguments=[
                 '/model/consent_robot/cmd_vel'
                 '@geometry_msgs/msg/Twist@gz.msgs.Twist',
+                '/world/dynamic_consent_world/control'
+                '@ros_gz_interfaces/srv/ControlWorld',
             ],
             output='screen',
         ),
@@ -64,6 +66,18 @@ def generate_gazebo_demo_launch_description(
             executable='gazebo_motion_adapter',
             name='gazebo_motion_adapter',
             parameters=[motion_config],
+            output='screen',
+        ),
+        Node(
+            package='dynamic_consent_hri',
+            executable='study_dashboard',
+            name='study_dashboard',
+            output='screen',
+        ),
+        Node(
+            package='dynamic_consent_hri',
+            executable='experiment_controller',
+            name='experiment_controller',
             output='screen',
         ),
     ])
