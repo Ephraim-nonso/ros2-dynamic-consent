@@ -40,6 +40,14 @@ setup(
             'study_dashboard = dynamic_consent_hri.study_dashboard:main',
             'experiment_controller = '
             'dynamic_consent_hri.experiment_controller:main',
+            'microphone_guard = '
+            'dynamic_consent_hri.microphone_guard:main',
+            'logical_camera_guard = '
+            'dynamic_consent_hri.logical_camera_guard:main',
+            'offline_speech_recognizer = '
+            'dynamic_consent_hri.offline_speech_recognizer:main',
+            'speech_feedback = '
+            'dynamic_consent_hri.speech_feedback:main',
         ],
     },
 )

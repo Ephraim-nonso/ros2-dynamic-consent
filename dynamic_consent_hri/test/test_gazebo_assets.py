@@ -67,6 +67,23 @@ def test_robot_uses_diff_drive_and_the_bridged_velocity_topic():
     assert plugin.findtext('topic') == '/model/consent_robot/cmd_vel'
 
 
+def test_robot_has_humanoid_body_and_non_rendering_logical_camera():
+    world = _world()
+    robot = world.find("model[@name='consent_robot']")
+    assert robot.find("link[@name='torso_link']") is not None
+    head = robot.find("link[@name='sensor_head']")
+    assert head is not None
+    sensor = head.find("sensor[@name='privacy_logical_camera']")
+    assert sensor is not None
+    assert sensor.attrib['type'] == 'logical_camera'
+    assert sensor.findtext('topic') == '/sensors/logical_camera/raw'
+    assert sensor.find('logical_camera') is not None
+    plugin = world.find(
+        "plugin[@name='gz::sim::systems::LogicalCamera']")
+    assert plugin is not None
+    assert plugin.attrib['filename'] == 'gz-sim-logical-camera-system'
+
+
 def test_motion_configuration_matches_world_topic():
     config = yaml.safe_load(
         (PACKAGE_DIR / 'config' / 'gazebo_demo.yaml').read_text(
@@ -80,12 +97,18 @@ def test_gazebo_launches_and_assets_are_installed():
     launch_dir = PACKAGE_DIR / 'launch'
     assert (launch_dir / 'gazebo_dynamic_demo.launch.py').is_file()
     assert (launch_dir / 'gazebo_static_demo.launch.py').is_file()
+    assert (launch_dir / 'gazebo_sensor_dynamic_demo.launch.py').is_file()
+    assert (launch_dir / 'gazebo_sensor_static_demo.launch.py').is_file()
 
     setup_text = (PACKAGE_DIR / 'setup.py').read_text(encoding='utf-8')
     assert "glob('worlds/*.sdf')" in setup_text
     assert 'gazebo_motion_adapter =' in setup_text
     assert 'study_dashboard =' in setup_text
     assert 'experiment_controller =' in setup_text
+    assert 'microphone_guard =' in setup_text
+    assert 'logical_camera_guard =' in setup_text
+    assert 'offline_speech_recognizer =' in setup_text
+    assert 'speech_feedback =' in setup_text
 
 
 def test_manifest_declares_ros_gz_runtime_dependencies():
@@ -97,6 +120,7 @@ def test_manifest_declares_ros_gz_runtime_dependencies():
     assert {
         'geometry_msgs',
         'nav_msgs',
+        'sensor_msgs',
         'std_srvs',
         'ros_gz_bridge',
         'ros_gz_interfaces',
@@ -121,3 +145,6 @@ def test_launch_includes_dashboard_and_coordinated_world_reset():
     assert 'ros_gz_interfaces/srv/ControlWorld' in source
     assert '/model/consent_robot/odometry' in source
     assert 'nav_msgs/msg/Odometry' in source
+    assert 'ros_gz_interfaces/msg/LogicalCameraImage' in source
+    assert 'logical_camera_guard' in source
+    assert 'microphone_guard' in source

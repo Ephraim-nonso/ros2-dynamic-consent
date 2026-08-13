@@ -26,6 +26,7 @@ logging, and an interactive Gazebo Harmonic visitor-assistance demonstration.
 | 6 | Complete | Interactive Gazebo world and consent-controlled motion |
 | 7 | Complete | Embodied assistance actions, dashboard, and coordinated reset |
 | 8 | Complete | Live ROS integration, failure-mode, and headless Gazebo tests |
+| 9 | In development | Consent-guarded real microphone and Gazebo logical camera |
 
 ## Seven privacy policies
 
@@ -74,6 +75,13 @@ consent itself. Granted stages produce short, bounded, stage-specific robot
 actions; refused stages keep the robot useful without performing the rejected
 privacy-sensitive action.
 
+Phase 9 adds an explicit sensor boundary. A Gazebo logical camera provides
+GPU-independent simulated person-presence observations, while a real ALSA
+microphone is opened only after `speech_input` authorization. Authorized audio
+is transcribed locally and can be displayed and spoken by the assistant. Raw
+audio, transcripts, model names, and poses are never written to the anonymous
+study log.
+
 ## Packages
 
 | Package | Build type | Contents |
@@ -106,6 +114,13 @@ Install the Gazebo integration if needed:
 ```bash
 sudo apt update
 sudo apt install ros-jazzy-ros-gz
+```
+
+For the guarded real-microphone demonstration, install the offline recognizer
+and local speech engine:
+
+```bash
+sudo apt install -y python3-pocketsphinx pocketsphinx-en-us espeak-ng
 ```
 
 ## Build
@@ -180,6 +195,32 @@ ros2 launch dynamic_consent_hri gazebo_dynamic_demo.launch.py \
 Headless mode still runs physics, consent handling, robot motion, dashboard
 updates, and anonymous logging.
 
+## Run the guarded-sensor demonstration
+
+The UTM-compatible sensor demonstration combines a real Linux microphone with
+a non-rendering Gazebo logical camera:
+
+```bash
+ros2 launch dynamic_consent_hri gazebo_sensor_dynamic_demo.launch.py
+```
+
+For the static-consent comparison:
+
+```bash
+ros2 launch dynamic_consent_hri gazebo_sensor_static_demo.launch.py
+```
+
+After allowing `speech_input`, speak during the eight-second capture window.
+PocketSphinx processes the audio locally, `/assistant/transcript` displays the
+result, and `espeak-ng` reads it aloud. Refusal leaves the microphone closed;
+revocation or session reset closes an active capture and discards its buffered
+result.
+
+The logical camera publishes a privacy-filtered boolean presence result. It is
+not an RGB camera, face recognizer, biometric system, or lip-reading model. Its
+purpose is to demonstrate the same consent-enforcement boundary without using
+Ogre 2 in the OpenGL-limited VM.
+
 ## Reset between trials
 
 From another sourced terminal:
@@ -212,6 +253,11 @@ ros2 topic echo /study/status \
   --qos-reliability reliable
 ros2 topic echo /capability/authorized
 ros2 topic echo /capability/blocked
+ros2 topic echo /sensors/logical_camera/status
+ros2 topic echo /perception/person_present
+ros2 topic echo /sensors/microphone/status
+ros2 topic echo /perception/speech/status
+ros2 topic echo /assistant/transcript
 ```
 
 Previously granted consent can be withdrawn with:
@@ -296,6 +342,7 @@ sensor validation, or hardware safety assessment.
 - [Phase 6 Gazebo demonstration](docs/phase6_gazebo_demo.md)
 - [Phase 7 embodied interaction](docs/phase7_embodied_interaction.md)
 - [Phase 8 integration testing](docs/phase8_integration_testing.md)
+- [Phase 9 guarded sensors](docs/phase9_guarded_sensors.md)
 
 ## License
 

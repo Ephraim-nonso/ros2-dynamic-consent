@@ -16,6 +16,12 @@ from .ros_time import to_time_msg
 from .scenario_logic import SCENARIO_STAGES, ScenarioStage
 
 
+SENSOR_ACTIONS = {
+    'person_recognition': 'observe_simulated_person_presence',
+    'speech_input': 'capture_and_transcribe_live_speech',
+}
+
+
 class ScenarioSimulatorNode(Node):
 
     def __init__(self) -> None:
@@ -23,6 +29,7 @@ class ScenarioSimulatorNode(Node):
         self.declare_parameter('consent_mode', 'dynamic')
         self.declare_parameter('startup_delay_seconds', 2.0)
         self.declare_parameter('stage_delay_seconds', 1.0)
+        self.declare_parameter('sensor_demo', False)
 
         raw_condition = self.get_parameter('consent_mode').value
         try:
@@ -34,12 +41,14 @@ class ScenarioSimulatorNode(Node):
             'startup_delay_seconds')
         self._stage_delay = self._nonnegative_parameter(
             'stage_delay_seconds')
+        self._sensor_demo = bool(self.get_parameter('sensor_demo').value)
 
         self._session_id = ''
         self._next_stage_index = 0
         self._current_stage: ScenarioStage | None = None
         self._next_action_at: float | None = None
         self._complete = False
+        self._waiting_for_execution = False
 
         self._request_pub = self.create_publisher(
             String, '/capability/requested', 10)
@@ -53,6 +62,12 @@ class ScenarioSimulatorNode(Node):
             String, '/capability/authorized', self._on_authorized, 10)
         self.create_subscription(
             String, '/capability/blocked', self._on_blocked, 10)
+        self.create_subscription(
+            String,
+            '/capability/execution_completed',
+            self._on_execution_completed,
+            10,
+        )
         self.create_timer(0.1, self._tick)
         self.get_logger().info(
             f'scenario simulator ready for {self._condition} condition')
@@ -82,6 +97,7 @@ class ScenarioSimulatorNode(Node):
         self._next_stage_index = 0
         self._current_stage = None
         self._complete = False
+        self._waiting_for_execution = False
         self._next_action_at = time.monotonic() + self._startup_delay
         self._publish_status('scenario_ready')
 
@@ -115,13 +131,52 @@ class ScenarioSimulatorNode(Node):
         stage = self._matching_stage(msg.data)
         if stage is None:
             return
+        if self._sensor_demo and stage.capability_id in SENSOR_ACTIONS:
+            self._waiting_for_execution = True
+            action = SENSOR_ACTIONS[stage.capability_id]
+            self._publish_status(
+                f'stage_{stage.number}:{stage.name}:capability_started:'
+                f'{action}')
+            self.get_logger().info(
+                f'stage {stage.number} starts {action}; waiting for sensor')
+            return
+        self._complete_authorized_stage(stage)
+
+    def _complete_authorized_stage(self, stage: ScenarioStage) -> None:
+        action = SENSOR_ACTIONS.get(
+            stage.capability_id, stage.capability_action
+        ) if self._sensor_demo else stage.capability_action
         self._publish_status(
             f'stage_{stage.number}:{stage.name}:capability_executed:'
-            f'{stage.capability_action}')
+            f'{action}')
         self._publish_event(
             'capability_executed', stage.capability_id, 'success')
         self.get_logger().info(
-            f'stage {stage.number} executes {stage.capability_action}')
+            f'stage {stage.number} executes {action}')
+        self._advance()
+
+    def _on_execution_completed(self, msg: String) -> None:
+        if not self._sensor_demo or not self._waiting_for_execution:
+            return
+        parts = msg.data.split(':', maxsplit=1)
+        if len(parts) != 2:
+            return
+        capability_id, result = parts
+        stage = self._matching_stage(capability_id)
+        if stage is None:
+            return
+        self._waiting_for_execution = False
+        if result == 'success':
+            self._complete_authorized_stage(stage)
+            return
+        self._publish_status(
+            f'stage_{stage.number}:{stage.name}:fallback_executed:'
+            f'{stage.fallback_action}')
+        self._publish_event(
+            'fallback_executed', stage.capability_id, 'fallback')
+        self.get_logger().warning(
+            f'stage {stage.number} sensor execution failed; executes '
+            f'{stage.fallback_action}')
         self._advance()
 
     def _on_blocked(self, msg: String) -> None:
@@ -146,6 +201,7 @@ class ScenarioSimulatorNode(Node):
     def _advance(self) -> None:
         self._next_stage_index += 1
         self._current_stage = None
+        self._waiting_for_execution = False
         self._next_action_at = time.monotonic() + self._stage_delay
 
     def _publish_status(self, value: str) -> None:

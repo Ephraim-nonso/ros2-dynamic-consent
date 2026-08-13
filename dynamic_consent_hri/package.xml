@@ -13,6 +13,7 @@
   <depend>std_srvs</depend>
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
+  <depend>sensor_msgs</depend>
   <depend>builtin_interfaces</depend>
   <depend>dynamic_consent_interfaces</depend>
 

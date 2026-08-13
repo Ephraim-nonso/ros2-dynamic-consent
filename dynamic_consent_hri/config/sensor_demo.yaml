@@ -1,0 +1,17 @@
+microphone_guard:
+  ros__parameters:
+    device: "default"
+    sample_rate: 16000
+    channels: 1
+    capture_seconds: 8.0
+    chunk_bytes: 3200
+
+logical_camera_guard:
+  ros__parameters:
+    observation_seconds: 4.0
+    target_model: "visitor_requesting_assistance"
+
+speech_feedback:
+  ros__parameters:
+    enable_tts: true
+    tts_executable: "espeak-ng"
