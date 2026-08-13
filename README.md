@@ -1,107 +1,218 @@
-# Dynamic Consent for ROS 2 Human-Robot Interaction
+# Dynamic Consent for ROS 2 Human–Robot Interaction
 
-A ROS 2 (Jazzy) package implementing **dynamic consent** for privacy-sensitive
-robot capabilities. Instead of a single up-front disclosure, the robot requests
-permission at the moment each capability (microphone, camera, location) becomes
-necessary, and the user can refuse or revoke at any time.
+A ROS 2 Jazzy research package for managing consent around privacy-sensitive
+robot capabilities. Instead of relying only on a broad notice at the beginning
+of an interaction, the robot can request permission when each capability is
+needed. A participant can accept, refuse, or later revoke permission, and every
+refusal has a useful privacy-preserving fallback.
 
-The core invariant:
+The package includes static and dynamic consent conditions, anonymous study
+logging, and an interactive Gazebo Harmonic visitor-assistance demonstration.
 
 > A privacy-sensitive capability must not operate unless valid consent exists
-> for that capability and session.
+> for that capability and anonymous session.
+
+## Current implementation
+
+| Phase | Status | Delivered capability |
+|---|---|---|
+| 1 | Complete | Custom consent messages and services |
+| 2 | Complete | Strict policy loader, consent state machine, and ROS manager |
+| 3 | Complete | Fail-closed privacy gate and terminal consent UI |
+| 4 | Complete | Static/dynamic study conditions and purpose-centred policies |
+| 5 | Complete | Anonymous, schema-controlled CSV event logging |
+| 6 | Complete | Interactive Gazebo world and consent-controlled motion |
+| 7 | Complete | Embodied assistance actions, dashboard, and coordinated reset |
+| 8 | Complete | Live ROS integration, failure-mode, and headless Gazebo tests |
+
+## Seven privacy policies
+
+The demonstration uses capability policies rather than treating a sensor name
+as sufficient consent context.
+
+| Capability | Purpose | Privacy dimensions | Refusal fallback |
+|---|---|---|---|
+| `person_recognition` | Recognise a returning user | Informational, social | Anonymous temporary session |
+| `speech_input` | Understand the requested destination | Informational | On-screen destination menu |
+| `interaction_memory` | Remember destinations and assistance preferences | Informational, psychological | Session-only memory |
+| `body_pose_tracking` | Detect pointing, mobility difficulty, or a possible fall | Informational, physical | Direction and assistance controls |
+| `route_guidance` | Provide indoor navigation | Informational, physical | Written directions |
+| `proximity_or_private_space_access` | Follow the user or cross a declared private boundary | Physical, social | Wait at the boundary and show instructions |
+| `remote_assistance_stream` | Connect an authorised staff member | Informational, social | Local help or in-person staff |
+
+Each policy also declares its data inputs, processing operation and location,
+recipients, retention, consent expiry, and fallback. See
+[`privacy_policy.yaml`](dynamic_consent_hri/config/privacy_policy.yaml) for the
+authoritative definitions.
+
+## How it works
+
+```text
+Capability request
+        │
+        ▼
+  Privacy gate ─────► Consent manager ─────► Consent prompt/UI
+        │                    ▲                       │
+        │                    └──── explicit decision┘
+        │
+        ├── valid grant ────► authorised capability action
+        └── otherwise ──────► blocked outcome and configured fallback
+                                  │
+                                  ▼
+                         anonymous event logger
+```
+
+The consent manager owns the anonymous session and consent state. The privacy
+gate is the only path from a capability request to authorisation. Unknown
+capabilities, malformed policies, missing services, pending prompts, expired
+grants, stale sessions, and unavailable UI all fail closed.
+
+The Gazebo adapter reacts only to validated scenario outcomes. It cannot grant
+consent itself. Granted stages produce short, bounded, stage-specific robot
+actions; refused stages keep the robot useful without performing the rejected
+privacy-sensitive action.
 
 ## Packages
 
 | Package | Build type | Contents |
 |---|---|---|
-| `dynamic_consent_interfaces` | `ament_cmake` | Custom messages and services |
-| `dynamic_consent_hri` | `ament_python` | Consent manager, privacy gate and terminal UI |
+| `dynamic_consent_interfaces` | `ament_cmake` | Consent messages and services |
+| `dynamic_consent_hri` | `ament_python` | Manager, gate, UI, logger, scenario, dashboard, controller, and Gazebo adapter |
 
 ## Repository layout
 
-```
-dynamic_consent_interfaces/   # msg/ and srv/ definitions
+```text
+dynamic_consent_interfaces/       Custom msg and srv definitions
 dynamic_consent_hri/
-├── dynamic_consent_hri/      # Python modules and ROS nodes
-├── config/                   # privacy_policy.yaml
-├── logs/                     # anonymous CSV session logs (gitignored)
-└── test/                     # pytest unit tests
-docs/                         # architecture and research design
+├── config/                       Privacy and Gazebo configuration
+├── dynamic_consent_hri/          Python core and ROS nodes
+├── launch/                       Static and dynamic Gazebo launch files
+├── test/                         Unit and live integration tests
+└── worlds/                       Self-contained Gazebo study world
+docs/                             Architecture, protocol, and phase guides
 ```
 
-## Design principles
+## Requirements
 
-- **Fail closed** — any state other than `GRANTED` (including malformed
-  policies, unknown capabilities, or a crashed UI) denies the capability.
-- **ROS-free core** — consent state, policy validation, gate decisions and UI
-  formatting are plain Python with no `rclpy` dependency, so the
-  security-critical logic is unit-testable without a ROS installation. ROS
-  nodes are thin wrappers.
-- **Anonymous by construction** — the system never stores names, demographics,
-  raw audio/images, or transcriptions. Sessions are identified only by a
-  randomly generated code.
+- Ubuntu 24.04
+- ROS 2 Jazzy
+- Gazebo Harmonic through `ros_gz`
+- Python 3.10 or newer
 
-## Building (Ubuntu 24.04 / ROS 2 Jazzy)
+Install the Gazebo integration if needed:
+
+```bash
+sudo apt update
+sudo apt install ros-jazzy-ros-gz
+```
+
+## Build
 
 ```bash
 source /opt/ros/jazzy/setup.bash
 mkdir -p ~/dynamic_consent_ws/src
 cd ~/dynamic_consent_ws/src
-git clone <this-repo> dynamic_consent_ros2
+git clone https://github.com/Ephraim-nonso/ros2-dynamic-consent.git
+
 cd ~/dynamic_consent_ws
+rosdep install --from-paths src --ignore-src -r -y
 colcon build --symlink-install
 source install/setup.bash
 ```
 
-Verify the interfaces:
-
-```bash
-ros2 interface show dynamic_consent_interfaces/msg/ConsentPrompt
-ros2 interface show dynamic_consent_interfaces/srv/CheckConsent
-```
-
-## Phase 3 interactive demonstration
-
-Phase 3 provides the consent manager, fail-closed privacy gate and terminal
-UI. The manager publishes the anonymous active session, so the nodes agree on
-the session without a participant identifier or repeated command-line value.
-
-After building, source ROS and the workspace in every terminal:
+Source ROS and the workspace in every new terminal:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
 source ~/dynamic_consent_ws/install/setup.bash
 ```
 
-Start these nodes in separate terminals:
+## Run the Gazebo study demonstration
+
+Run one condition at a time.
+
+Dynamic consent asks at the moment each of the seven capabilities is needed:
 
 ```bash
-ros2 run dynamic_consent_hri consent_manager
-ros2 run dynamic_consent_hri privacy_gate
-ros2 run dynamic_consent_hri consent_ui
+ros2 launch dynamic_consent_hri gazebo_dynamic_demo.launch.py
 ```
 
-Before requesting a capability, observe the two possible outcomes in two more
-terminals:
+Static consent presents one combined notice and applies one decision to all
+seven capabilities for that session:
 
 ```bash
+ros2 launch dynamic_consent_hri gazebo_static_demo.launch.py
+```
+
+Use the terminal UI to select:
+
+```text
+[1] Allow
+[2] Refuse
+[3] View more information
+```
+
+The participant-facing dashboard reports the current stage, decision outcome,
+fallback, embodied action, and session completion. The same world, robot,
+stage order, and motion parameters are used in both conditions; only consent
+timing changes.
+
+### UTM and limited OpenGL support
+
+The launch defaults to the Ogre 1 renderer because UTM guests using virgl on
+Apple Silicon may expose only an OpenGL 2.1 desktop context. On a machine with
+stronger graphics support, request Ogre 2 with:
+
+```bash
+ros2 launch dynamic_consent_hri gazebo_dynamic_demo.launch.py \
+  render_engine:=ogre2
+```
+
+To run without the Gazebo graphical client:
+
+```bash
+ros2 launch dynamic_consent_hri gazebo_dynamic_demo.launch.py \
+  headless:=true
+```
+
+Headless mode still runs physics, consent handling, robot motion, dashboard
+updates, and anonymous logging.
+
+## Reset between trials
+
+From another sourced terminal:
+
+```bash
+ros2 service call /study/reset std_srvs/srv/Trigger "{}"
+```
+
+Wait for `reset_complete` before beginning the next trial:
+
+```bash
+ros2 topic echo /study/control_status \
+  --qos-durability transient_local \
+  --qos-reliability reliable
+```
+
+A successful reset restores the Gazebo world, clears the old consent state,
+creates a fresh anonymous session, opens a new log, and restarts the selected
+condition.
+
+## Observe the demonstration
+
+Useful topics include:
+
+```bash
+ros2 topic echo /scenario/status
+ros2 topic echo /gazebo_demo/status
+ros2 topic echo /study/status \
+  --qos-durability transient_local \
+  --qos-reliability reliable
 ros2 topic echo /capability/authorized
 ros2 topic echo /capability/blocked
 ```
 
-Request simulated microphone access:
-
-```bash
-ros2 topic pub --once /capability/requested std_msgs/msg/String \
-  "{data: speech_input}"
-```
-
-The UI asks for an explicit decision. Allow publishes `speech_input` on
-`/capability/authorized`; refusal publishes it on `/capability/blocked` and
-the gate reports the configured `show_destination_menu` fallback. No input,
-EOF, or closing the UI leaves the request pending and never authorizes it.
-
-To test revocation, copy the session id printed by the manager and call:
+Previously granted consent can be withdrawn with:
 
 ```bash
 ros2 service call /consent/revoke \
@@ -109,24 +220,76 @@ ros2 service call /consent/revoke \
   "{session_id: 'session_XXXXXXXX', capability_id: 'speech_input'}"
 ```
 
-The next `speech_input` request is blocked. Expired grants are also denied and
-cause a new prompt. Static/dynamic condition launch files, the deterministic
-scenario and anonymous logger are later phases and are not advertised as
-runnable yet.
+## Anonymous study logging
 
-## Running unit tests (no ROS required)
+The logger creates one private CSV file per anonymous session under
+`~/.ros/dynamic_consent/logs` by default. It records only closed-schema study
+events such as requests, decisions, execution outcomes, and response times.
+It rejects participant-entered text, raw sensor content, unsafe identifiers,
+cross-session events, symbolic-link targets, and malformed records.
 
-The pure-Python core tests run on any machine with Python ≥ 3.10:
+The logger disables itself if raw sensor storage is enabled. This project does
+not store names, demographics, audio, images, transcripts, or biometric data.
+
+## Testing
+
+Run the complete ROS 2 package test suite on the Ubuntu VM:
 
 ```bash
-cd dynamic_consent_hri
-python3 -m pytest test/ -v
+cd ~/dynamic_consent_ws
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+colcon test --packages-select dynamic_consent_hri \
+  --event-handlers console_direct+
+colcon test-result --verbose
 ```
+
+Run the ROS integration tests without Gazebo:
+
+```bash
+python3 -m pytest \
+  src/ros2-dynamic-consent/dynamic_consent_hri/test \
+  -m "not gazebo" -v
+```
+
+Run only the headless Gazebo end-to-end test:
+
+```bash
+python3 -m pytest \
+  src/ros2-dynamic-consent/dynamic_consent_hri/test/integration/test_gazebo_headless_smoke.py \
+  -v
+```
+
+The ROS-free core tests also run on systems without ROS. Live ROS and Gazebo
+modules skip cleanly when their runtime is unavailable.
+
+Phase 8 verifies dynamic grant/revocation, static session rotation, unanswered
+prompts, unknown capabilities, missing consent services, missing policies,
+ordered seven-stage execution, odometry, dashboard completion, and coordinated
+Gazebo reset.
+
+## Safety and scope
+
+This is a research demonstration of consent orchestration—not a production
+privacy, security, biometric, perception, or autonomous-navigation system.
+Gazebo visualises policy-controlled outcomes; it does not collect real faces,
+speech, body pose, location history, or remote-assistance streams.
+
+A passing software suite does not replace deployment threat modelling,
+research ethics review, participant usability testing, legal review, real
+sensor validation, or hardware safety assessment.
 
 ## Documentation
 
-- [docs/architecture.md](docs/architecture.md) — components, topics, services
-- [docs/dynamic_consent_pattern.md](docs/dynamic_consent_pattern.md) — consent
-  state machine, prompts, fallbacks
-- [docs/evaluation_scenario.md](docs/evaluation_scenario.md) — static vs
-  dynamic study conditions and logging schema
+- [System architecture](docs/architecture.md)
+- [Dynamic consent and policy pattern](docs/dynamic_consent_pattern.md)
+- [Evaluation scenario](docs/evaluation_scenario.md)
+- [Phase 5 anonymous logging](docs/phase5_anonymous_logging.md)
+- [Phase 6 Gazebo demonstration](docs/phase6_gazebo_demo.md)
+- [Phase 7 embodied interaction](docs/phase7_embodied_interaction.md)
+- [Phase 8 integration testing](docs/phase8_integration_testing.md)
+
+## License
+
+Apache-2.0
