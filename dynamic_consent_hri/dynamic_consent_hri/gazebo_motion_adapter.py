@@ -6,6 +6,7 @@ import time
 
 import rclpy
 from geometry_msgs.msg import Twist
+from rclpy.exceptions import RCLError
 from rclpy.node import Node
 from std_msgs.msg import String
 
@@ -132,7 +133,13 @@ class GazeboMotionAdapterNode(Node):
     def destroy_node(self):
         self._segments.clear()
         self._segment_deadline = None
-        self._publish_stop()
+        if rclpy.ok(context=self.context):
+            try:
+                self._publish_stop()
+            except RCLError:
+                # A signal can invalidate the context between the readiness
+                # check and publish. Destruction must still complete cleanly.
+                pass
         return super().destroy_node()
 
 

@@ -56,6 +56,30 @@ class RosProbe:
     def discard(self, topic):
         self.messages[topic].clear()
 
+    def wait_for_publishers(self, topics, timeout=10.0, settle_time=0.25):
+        """Wait until every observed topic is present in the ROS graph.
+
+        Launch readiness means that processes have started, not that DDS
+        discovery has matched every publisher and subscription.  Waiting here
+        prevents fast one-shot status messages from racing test-probe startup.
+        """
+        pending = set(topics)
+        deadline = time.monotonic() + timeout
+        while pending and time.monotonic() < deadline:
+            pending = {
+                topic for topic in pending
+                if self.node.count_publishers(topic) == 0
+            }
+            rclpy.spin_once(self.node, timeout_sec=0.05)
+        if pending:
+            missing = ', '.join(sorted(pending))
+            raise AssertionError(
+                f'timed out waiting for publishers on {missing}')
+
+        settle_deadline = time.monotonic() + settle_time
+        while time.monotonic() < settle_deadline:
+            rclpy.spin_once(self.node, timeout_sec=0.05)
+
     def publish(self, topic, message, timeout=5.0):
         key = (topic, type(message))
         publisher = self._publishers.get(key)
