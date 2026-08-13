@@ -6,7 +6,6 @@ import time
 
 import rclpy
 from geometry_msgs.msg import Twist
-from rclpy.exceptions import RCLError
 from rclpy.node import Node
 from std_msgs.msg import String
 
@@ -136,7 +135,7 @@ class GazeboMotionAdapterNode(Node):
         if rclpy.ok(context=self.context):
             try:
                 self._publish_stop()
-            except RCLError:
+            except Exception:  # rclpy exception type varies by ROS release
                 # A signal can invalidate the context between the readiness
                 # check and publish. Destruction must still complete cleanly.
                 pass
