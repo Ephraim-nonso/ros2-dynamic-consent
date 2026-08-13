@@ -132,7 +132,13 @@ class GazeboMotionAdapterNode(Node):
     def destroy_node(self):
         self._segments.clear()
         self._segment_deadline = None
-        self._publish_stop()
+        if rclpy.ok(context=self.context):
+            try:
+                self._publish_stop()
+            except Exception:  # rclpy exception type varies by ROS release
+                # A signal can invalidate the context between the readiness
+                # check and publish. Destruction must still complete cleanly.
+                pass
         return super().destroy_node()
 
 

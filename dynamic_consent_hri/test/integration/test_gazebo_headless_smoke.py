@@ -72,6 +72,8 @@ def _grant(prompt):
 @pytest.mark.launch(fixture=headless_gazebo_study)
 def test_headless_study_moves_completes_and_resets():
     with running_probe(_subscriptions()) as probe:
+        probe.wait_for_publishers(
+            ['/scenario/status', '/gazebo_demo/status'], timeout=30.0)
         first_session = probe.wait_for_message(
             '/consent/session', timeout=45.0)
         initial_odom = probe.wait_for_message(
