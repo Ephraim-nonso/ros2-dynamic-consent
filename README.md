@@ -1,5 +1,7 @@
 # Dynamic Consent for ROS 2 Human–Robot Interaction
 
+[![ROS 2 Jazzy CI](https://github.com/Ephraim-nonso/ros2-dynamic-consent/actions/workflows/ros2_jazzy_ci.yml/badge.svg)](https://github.com/Ephraim-nonso/ros2-dynamic-consent/actions/workflows/ros2_jazzy_ci.yml)
+
 A ROS 2 Jazzy research package for managing consent around privacy-sensitive
 robot capabilities. Instead of relying only on a broad notice at the beginning
 of an interaction, the robot can request permission when each capability is
@@ -268,6 +270,11 @@ Phase 8 verifies dynamic grant/revocation, static session rotation, unanswered
 prompts, unknown capabilities, missing consent services, missing policies,
 ordered seven-stage execution, odometry, dashboard completion, and coordinated
 Gazebo reset.
+
+The `ROS 2 Jazzy CI` GitHub Actions workflow performs the same dependency
+resolution, build, and test process in a clean Ubuntu 24.04 environment on
+every pull request and push to `main`. Colcon logs are retained for 14 days,
+including when a job fails.
 
 ## Safety and scope
 

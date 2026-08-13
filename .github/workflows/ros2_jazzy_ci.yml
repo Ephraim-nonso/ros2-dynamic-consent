@@ -1,0 +1,56 @@
+name: ROS 2 Jazzy CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ros2-jazzy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and test (Jazzy)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    container:
+      image: rostooling/setup-ros-docker:ubuntu-noble-latest
+
+    steps:
+      - name: Resolve dependencies, build, and test
+        id: ros_ci
+        uses: ros-tooling/action-ros-ci@v0.4
+        with:
+          package-name: >-
+            dynamic_consent_interfaces
+            dynamic_consent_hri
+          target-ros2-distro: jazzy
+          coverage-result: false
+          colcon-defaults: |
+            {
+              "build": {
+                "symlink-install": true,
+                "event-handlers": ["console_cohesion+"]
+              },
+              "test": {
+                "event-handlers": ["console_direct+"]
+              },
+              "test-result": {
+                "verbose": true
+              }
+            }
+
+      - name: Upload colcon logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jazzy-colcon-logs
+          path: ${{ steps.ros_ci.outputs.ros-workspace-directory-name }}/log
+          if-no-files-found: warn
+          retention-days: 14
