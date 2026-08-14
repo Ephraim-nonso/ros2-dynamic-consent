@@ -4,6 +4,8 @@
     <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
     <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
     <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <!-- A logical camera avoids GPU rendering in OpenGL-limited UTM guests. -->
+    <plugin filename="gz-sim-logical-camera-system" name="gz::sim::systems::LogicalCamera"/>
 
     <gui fullscreen="0">
       <plugin filename="MinimalScene" name="Assistance study view">
@@ -99,7 +101,7 @@
 
     <!-- A stylised visitor makes the assistance relationship explicit. -->
     <model name="visitor_requesting_assistance">
-      <static>true</static><pose>-4.15 1.05 0.05 0 0 0</pose>
+      <static>true</static><pose>-3.05 0.75 0.05 0 0 0</pose>
       <link name="visitor">
         <visual name="left_leg"><pose>0 0.10 0.23 0 0 0</pose><geometry><box><size>0.12 0.12 0.46</size></box></geometry><material><ambient>0.12 0.16 0.28 1</ambient><diffuse>0.12 0.16 0.28 1</diffuse></material></visual>
         <visual name="right_leg"><pose>0 -0.10 0.23 0 0 0</pose><geometry><box><size>0.12 0.12 0.46</size></box></geometry><material><ambient>0.12 0.16 0.28 1</ambient><diffuse>0.12 0.16 0.28 1</diffuse></material></visual>
@@ -175,6 +177,33 @@
         <visual name="base_visual"><geometry><box><size>0.55 0.42 0.22</size></box></geometry><material><ambient>0.05 0.35 0.78 1</ambient><diffuse>0.05 0.35 0.78 1</diffuse></material></visual>
         <visual name="consent_indicator"><pose>0 0 0.20 0 0 0</pose><geometry><sphere><radius>0.09</radius></sphere></geometry><material><ambient>0.10 0.90 0.55 1</ambient><diffuse>0.10 0.90 0.55 1</diffuse><emissive>0.03 0.25 0.10 1</emissive></material></visual>
       </link>
+      <!-- Humanoid upper body mounted on a stable differential-drive base. -->
+      <link name="torso_link">
+        <pose relative_to="base_link">0 0 0.58 0 0 0</pose>
+        <inertial><mass>1.0</mass><inertia><ixx>0.03</ixx><iyy>0.03</iyy><izz>0.03</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia></inertial>
+        <visual name="torso_visual"><geometry><box><size>0.34 0.28 0.72</size></box></geometry><material><ambient>0.08 0.42 0.82 1</ambient><diffuse>0.08 0.42 0.82 1</diffuse></material></visual>
+        <visual name="left_arm"><pose>0 0.23 0 0 0 0</pose><geometry><capsule><radius>0.055</radius><length>0.52</length></capsule></geometry><material><ambient>0.72 0.76 0.82 1</ambient><diffuse>0.72 0.76 0.82 1</diffuse></material></visual>
+        <visual name="right_arm"><pose>0 -0.23 0 0 0 0</pose><geometry><capsule><radius>0.055</radius><length>0.52</length></capsule></geometry><material><ambient>0.72 0.76 0.82 1</ambient><diffuse>0.72 0.76 0.82 1</diffuse></material></visual>
+      </link>
+      <link name="sensor_head">
+        <pose relative_to="base_link">0 0 1.08 0 0 0</pose>
+        <inertial><mass>0.5</mass><inertia><ixx>0.008</ixx><iyy>0.008</iyy><izz>0.008</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia></inertial>
+        <visual name="head_visual"><geometry><sphere><radius>0.19</radius></sphere></geometry><material><ambient>0.75 0.80 0.88 1</ambient><diffuse>0.75 0.80 0.88 1</diffuse></material></visual>
+        <visual name="camera_eye"><pose>0.18 0 0.03 0 0 0</pose><geometry><sphere><radius>0.045</radius></sphere></geometry><material><ambient>0.05 0.80 0.65 1</ambient><diffuse>0.05 0.80 0.65 1</diffuse><emissive>0.02 0.25 0.18 1</emissive></material></visual>
+        <sensor name="privacy_logical_camera" type="logical_camera">
+          <pose>0.18 0 0.03 0 0 0</pose>
+          <always_on>true</always_on>
+          <update_rate>5</update_rate>
+          <visualize>false</visualize>
+          <topic>/sensors/logical_camera/raw</topic>
+          <logical_camera>
+            <near>0.20</near>
+            <far>4.0</far>
+            <horizontal_fov>1.60</horizontal_fov>
+            <aspect_ratio>1.50</aspect_ratio>
+          </logical_camera>
+        </sensor>
+      </link>
       <link name="left_wheel">
         <pose relative_to="base_link">0 0.24 -0.08 1.5708 0 0</pose>
         <inertial><mass>0.3</mass><inertia><ixx>0.001</ixx><iyy>0.001</iyy><izz>0.001</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia></inertial>
@@ -189,6 +218,8 @@
       </link>
       <joint name="left_wheel_joint" type="revolute"><parent>base_link</parent><child>left_wheel</child><axis><xyz expressed_in="__model__">0 1 0</xyz></axis></joint>
       <joint name="right_wheel_joint" type="revolute"><parent>base_link</parent><child>right_wheel</child><axis><xyz expressed_in="__model__">0 1 0</xyz></axis></joint>
+      <joint name="torso_joint" type="fixed"><parent>base_link</parent><child>torso_link</child></joint>
+      <joint name="head_joint" type="fixed"><parent>base_link</parent><child>sensor_head</child></joint>
       <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
         <left_joint>left_wheel_joint</left_joint>
         <right_joint>right_wheel_joint</right_joint>
