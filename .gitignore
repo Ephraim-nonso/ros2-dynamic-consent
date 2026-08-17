@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+.camera-relay-venv/
 
 # ROS 2 / colcon
 build/

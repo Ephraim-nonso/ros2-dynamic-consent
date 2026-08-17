@@ -1,0 +1,2 @@
+# Installed only on the macOS host for tools/mac_camera_relay.py.
+opencv-python>=4.10,<5

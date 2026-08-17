@@ -75,6 +75,21 @@ consent itself. Granted stages produce short, bounded, stage-specific robot
 actions; refused stages keep the robot useful without performing the rejected
 privacy-sensitive action.
 
+### Focused camera-consent avatar demo
+
+An isolated demonstration is also available for testing one sensor at a time.
+It requests permission for `camera_expression_mirroring`, opens the Mac
+built-in camera only after approval, shows the authorized live view, and maps
+temporary face signals to a Gazebo avatar's head, eyelids, and jaw. Refusal,
+revocation, the 60-second authorization limit, or shutdown closes the camera
+and returns the avatar to neutral. It does not start the microphone or the
+seven-stage scenario.
+
+Because UTM cannot expose the built-in Apple camera as `/dev/video0`, this demo
+uses a consent-controlled helper on macOS. See
+[`camera_consent_avatar_demo.md`](docs/camera_consent_avatar_demo.md) for the
+two-machine setup and validation procedure.
+
 Phase 9 adds an explicit sensor boundary. A Gazebo logical camera provides
 GPU-independent simulated person-presence observations, while a real ALSA
 microphone is opened only after `speech_input` authorization. Authorized audio

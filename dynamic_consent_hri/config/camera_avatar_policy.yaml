@@ -1,0 +1,25 @@
+policy_version: "camera-avatar-1.0"
+
+capabilities:
+  camera_expression_mirroring:
+    sensor: "Mac built-in camera through the consent-controlled local relay"
+    privacy_dimensions: [informational, psychological]
+    data_inputs: [live_face_video, temporary_face_position, expression_signals]
+    purpose: >
+      Show your live camera view and mirror temporary facial actions on the
+      Gazebo robot avatar
+    processing: >
+      Detect a face, eye visibility, smile, mouth movement, and head position
+      locally. Convert those observations into temporary avatar joint commands.
+    processing_location: local_network
+    recipients: [local_gazebo_avatar]
+    prompt: >
+      May I open your Mac camera so you can see your live face and make the
+      Gazebo robot mirror your head movement, blinking, smiling, and talking?
+      Video and expression signals are processed locally for this demonstration,
+      are not used to identify you, and are not stored.
+    retention: not_stored
+    retention_seconds: 0
+    expiry_seconds: 60
+    required: false
+    refusal_fallback: "keep_camera_closed_and_avatar_neutral"

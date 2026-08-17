@@ -48,6 +48,8 @@ setup(
             'dynamic_consent_hri.offline_speech_recognizer:main',
             'speech_feedback = '
             'dynamic_consent_hri.speech_feedback:main',
+            'camera_avatar_gateway = '
+            'dynamic_consent_hri.camera_avatar_gateway:main',
         ],
     },
 )
