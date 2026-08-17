@@ -22,6 +22,7 @@ from dynamic_consent_interfaces.msg import ConsentEvent
 from .camera_avatar_logic import (AvatarCommand, FaceObservation,
                                   NEUTRAL_COMMAND,
                                   command_for_observation)
+from .opencv_assets import resolve_haar_cascade_directory
 from .ros_qos import SESSION_QOS
 
 
@@ -57,13 +58,18 @@ class CameraAvatarGatewayNode(Node):
         self._previous_lower_face: np.ndarray | None = None
         self._eyes_missing_frames = 0
 
-        cascade_path = cv2.data.haarcascades
-        self._face_detector = cv2.CascadeClassifier(
-            cascade_path + 'haarcascade_frontalface_default.xml')
-        self._eye_detector = cv2.CascadeClassifier(
-            cascade_path + 'haarcascade_eye_tree_eyeglasses.xml')
-        self._smile_detector = cv2.CascadeClassifier(
-            cascade_path + 'haarcascade_smile.xml')
+        try:
+            cascade_path = resolve_haar_cascade_directory(cv2)
+        except FileNotFoundError as exc:
+            self._configuration_valid = False
+            self.get_logger().error(f'{exc}; failing closed')
+            cascade_path = None
+        self._face_detector = self._load_cascade(
+            cascade_path, 'haarcascade_frontalface_default.xml')
+        self._eye_detector = self._load_cascade(
+            cascade_path, 'haarcascade_eye_tree_eyeglasses.xml')
+        self._smile_detector = self._load_cascade(
+            cascade_path, 'haarcascade_smile.xml')
         if any(detector.empty() for detector in (
                 self._face_detector, self._eye_detector,
                 self._smile_detector)):
@@ -102,6 +108,12 @@ class CameraAvatarGatewayNode(Node):
         self._publish_neutral()
         self._publish_privacy_frame('CAMERA OFF - WAITING FOR CONSENT')
         self._publish_status('camera_closed:waiting_for_consent')
+
+    @staticmethod
+    def _load_cascade(directory, filename: str):
+        if directory is None:
+            return cv2.CascadeClassifier()
+        return cv2.CascadeClassifier(str(directory / filename))
 
     def _validate_configuration(self) -> bool:
         parsed = urlparse(self._relay_url)

@@ -73,6 +73,7 @@ cd ~/dynamic_consent_ws
 source /opt/ros/jazzy/setup.bash
 
 rosdep install --from-paths src --ignore-src -r -y
+sudo apt install -y opencv-data
 colcon build --symlink-install
 source install/setup.bash
 

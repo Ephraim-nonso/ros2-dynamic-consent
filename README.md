@@ -90,6 +90,9 @@ uses a consent-controlled helper on macOS. See
 [`camera_consent_avatar_demo.md`](docs/camera_consent_avatar_demo.md) for the
 two-machine setup and validation procedure.
 
+Ubuntu's system OpenCV build stores the face-detector XML assets separately;
+install them with `sudo apt install opencv-data` before running this demo.
+
 Phase 9 adds an explicit sensor boundary. A Gazebo logical camera provides
 GPU-independent simulated person-presence observations, while a real ALSA
 microphone is opened only after `speech_input` authorization. Authorized audio
