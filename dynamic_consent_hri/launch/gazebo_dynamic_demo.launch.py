@@ -1,6 +1,6 @@
 """Launch the dynamic-consent study condition in Gazebo."""
 
-from dynamic_consent_hri.gazebo_demo_launch import (
+from dynamic_consent_hri.common.gazebo_launch_helpers import (
     generate_gazebo_demo_launch_description,
 )
 

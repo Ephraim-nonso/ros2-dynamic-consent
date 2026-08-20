@@ -30,26 +30,34 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'consent_manager = dynamic_consent_hri.consent_manager:main',
-            'privacy_gate = dynamic_consent_hri.privacy_gate:main',
-            'consent_ui = dynamic_consent_hri.consent_ui:main',
-            'consent_logger = dynamic_consent_hri.consent_logger:main',
-            'scenario_simulator = dynamic_consent_hri.scenario_simulator:main',
+            'consent_manager = '
+            'dynamic_consent_hri.nodes.consent_manager_node:main',
+            'privacy_gate = '
+            'dynamic_consent_hri.nodes.privacy_gate_node:main',
+            'consent_ui = '
+            'dynamic_consent_hri.nodes.consent_ui_node:main',
+            'consent_logger = '
+            'dynamic_consent_hri.nodes.consent_logger_node:main',
+            'scenario_simulator = '
+            'dynamic_consent_hri.nodes.scenario_simulator_node:main',
             'gazebo_motion_adapter = '
-            'dynamic_consent_hri.gazebo_motion_adapter:main',
-            'study_dashboard = dynamic_consent_hri.study_dashboard:main',
+            'dynamic_consent_hri.nodes.gazebo_motion_adapter_node:main',
+            'study_dashboard = '
+            'dynamic_consent_hri.nodes.study_dashboard_node:main',
             'experiment_controller = '
-            'dynamic_consent_hri.experiment_controller:main',
+            'dynamic_consent_hri.nodes.experiment_controller_node:main',
             'microphone_guard = '
-            'dynamic_consent_hri.microphone_guard:main',
+            'dynamic_consent_hri.nodes.microphone_guard_node:main',
             'logical_camera_guard = '
-            'dynamic_consent_hri.logical_camera_guard:main',
+            'dynamic_consent_hri.nodes.logical_camera_guard_node:main',
             'offline_speech_recognizer = '
-            'dynamic_consent_hri.offline_speech_recognizer:main',
+            'dynamic_consent_hri.nodes.offline_speech_recognizer_node:main',
             'speech_feedback = '
-            'dynamic_consent_hri.speech_feedback:main',
-            'camera_avatar_gateway = '
-            'dynamic_consent_hri.camera_avatar_gateway:main',
+            'dynamic_consent_hri.nodes.speech_feedback_node:main',
+            'research_driver = '
+            'dynamic_consent_hri.research.trial_driver_node:main',
+            'research_analysis = '
+            'dynamic_consent_hri.research.analyze_trials:main',
         ],
     },
 )

@@ -1,0 +1,1 @@
+"""Consent-guarded sensor adapters."""

@@ -1,6 +1,6 @@
 """Launch real microphone plus Gazebo logical-camera static consent demo."""
 
-from dynamic_consent_hri.gazebo_demo_launch import (
+from dynamic_consent_hri.common.gazebo_launch_helpers import (
     generate_gazebo_demo_launch_description,
 )
 

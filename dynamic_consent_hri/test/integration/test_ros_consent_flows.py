@@ -19,7 +19,7 @@ from std_msgs.msg import String
 
 from dynamic_consent_interfaces.msg import ConsentDecision, ConsentPrompt
 from dynamic_consent_interfaces.srv import ResetSession, RevokeConsent
-from dynamic_consent_hri.scenario_logic import SCENARIO_STAGES
+from dynamic_consent_hri.simulation.scenario_logic import SCENARIO_STAGES
 
 from .integration_helpers import TRANSIENT_QOS, running_probe
 

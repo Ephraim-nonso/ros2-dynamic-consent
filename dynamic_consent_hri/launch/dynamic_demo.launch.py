@@ -1,4 +1,4 @@
-from dynamic_consent_hri.demo_launch import generate_demo_launch_description
+from dynamic_consent_hri.common.launch_helpers import generate_demo_launch_description
 
 
 def generate_launch_description():

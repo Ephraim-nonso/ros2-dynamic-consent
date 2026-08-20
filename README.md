@@ -75,24 +75,6 @@ consent itself. Granted stages produce short, bounded, stage-specific robot
 actions; refused stages keep the robot useful without performing the rejected
 privacy-sensitive action.
 
-### Focused camera-consent avatar demo
-
-An isolated demonstration is also available for testing one sensor at a time.
-It requests permission for `camera_expression_mirroring`, opens the Mac
-built-in camera only after approval, shows the authorized live view, and maps
-temporary face signals to a Gazebo avatar's head, eyelids, and jaw. Refusal,
-revocation, the 60-second authorization limit, or shutdown closes the camera
-and returns the avatar to neutral. It does not start the microphone or the
-seven-stage scenario.
-
-Because UTM cannot expose the built-in Apple camera as `/dev/video0`, this demo
-uses a consent-controlled helper on macOS. See
-[`camera_consent_avatar_demo.md`](docs/camera_consent_avatar_demo.md) for the
-two-machine setup and validation procedure.
-
-Ubuntu's system OpenCV build stores the face-detector XML assets separately;
-install them with `sudo apt install opencv-data` before running this demo.
-
 Phase 9 adds an explicit sensor boundary. A Gazebo logical camera provides
 GPU-independent simulated person-presence observations, while a real ALSA
 microphone is opened only after `speech_input` authorization. Authorized audio
@@ -105,7 +87,7 @@ study log.
 | Package | Build type | Contents |
 |---|---|---|
 | `dynamic_consent_interfaces` | `ament_cmake` | Consent messages and services |
-| `dynamic_consent_hri` | `ament_python` | Manager, gate, UI, logger, scenario, dashboard, controller, and Gazebo adapter |
+| `dynamic_consent_hri` | `ament_python` | Consent core, ROS nodes, guarded sensors, simulation, UI, logging, and research analysis |
 
 ## Repository layout
 
@@ -113,7 +95,14 @@ study log.
 dynamic_consent_interfaces/       Custom msg and srv definitions
 dynamic_consent_hri/
 ├── config/                       Privacy and Gazebo configuration
-├── dynamic_consent_hri/          Python core and ROS nodes
+├── dynamic_consent_hri/
+│   ├── core/                     Policy, consent state, gate, event log
+│   ├── common/                   ROS QoS, paths, time, launch helpers
+│   ├── nodes/                    ROS 2 node entry points
+│   ├── sensors/                  Consent-guarded sensor adapters
+│   ├── simulation/               Scenario and Gazebo motion models
+│   ├── ui/                       Participant-facing formatting logic
+│   └── research/                 Synthetic trials and analysis
 ├── launch/                       Static and dynamic Gazebo launch files
 ├── test/                         Unit and live integration tests
 └── worlds/                       Self-contained Gazebo study world

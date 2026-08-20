@@ -44,6 +44,20 @@ consent, wrong session — resolves to **deny** (fail closed).
 
 ## Components
 
+The Python package is organized by responsibility rather than by development
+phase:
+
+```text
+dynamic_consent_hri/
+├── core/        policy, consent state, gate decisions, anonymous event log
+├── common/      ROS QoS, time/path helpers, launch construction
+├── nodes/       ROS 2 process entry points
+├── sensors/     reusable authorization-window logic
+├── simulation/  seven-stage scenario and Gazebo motion models
+├── ui/          participant-facing formatting and dashboard copy
+└── research/   synthetic trial driver and aggregate/LINDDUN analysis
+```
+
 | Component | Node | Responsibility |
 |---|---|---|
 | Policy loader | (library) | Parse and validate `privacy_policy.yaml`; reject malformed policies |
